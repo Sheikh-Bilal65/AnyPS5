@@ -25,29 +25,32 @@ FcFontSet* APS5_VABI FcFontSetCreate() {
 }
 
 int APS5_VABI FcFontSetAdd(FcFontSet* set, FcPattern* pattern) {
-    if (!set || !pattern || set->nfont < 0 || set->sfont < 0 || set->nfont >= 1024)
+    auto* const fontSet = set;
+    auto* const pat = pattern;
+    if (!fontSet || !pat || fontSet->nfont < 0 || fontSet->sfont < 0 || fontSet->nfont >= 1024)
         return 0;
-    if (set->nfont >= set->sfont / static_cast<int>(sizeof(FcPattern*))) {
-        if (set->sfont >= 8192) return 0;
+    if (fontSet->nfont >= fontSet->sfont / static_cast<int>(sizeof(FcPattern*))) {
+        if (fontSet->sfont >= 8192) return 0;
         constexpr int increment = 16 * sizeof(FcPattern*);
-        if (set->sfont > std::numeric_limits<int>::max() - increment) return 0;
-        const auto next = static_cast<std::size_t>(set->sfont + increment);
-        void* storage = std::realloc(set->fonts, next);
+        if (fontSet->sfont > std::numeric_limits<int>::max() - increment) return 0;
+        const auto next = static_cast<std::size_t>(fontSet->sfont + increment);
+        void* storage = std::realloc(fontSet->fonts, next);
         if (!storage) return 0;
-        set->fonts = static_cast<FcPattern**>(storage);
-        set->sfont = static_cast<int>(next);
+        fontSet->fonts = static_cast<FcPattern**>(storage);
+        fontSet->sfont = static_cast<int>(next);
     }
-    FcPattern* duplicate = FcPatternDuplicate_nid_postfix(pattern);
+    FcPattern* duplicate = FcPatternDuplicate_nid_postfix(pat);
     if (!duplicate) return 0;
-    set->fonts[set->nfont++] = duplicate;
+    fontSet->fonts[fontSet->nfont++] = duplicate;
     return 1;
 }
 
 void APS5_VABI FcFontSetDestroy(FcFontSet* set) {
-    if (!set) return;
-    for (int i = 0; i < set->nfont; ++i) FcPatternDestroy_nid_postfix(set->fonts[i]);
-    std::free(set->fonts);
-    std::free(set);
+    auto* const fontSet = set;
+    if (!fontSet) return;
+    for (int i = 0; i < fontSet->nfont; ++i) FcPatternDestroy_nid_postfix(fontSet->fonts[i]);
+    std::free(fontSet->fonts);
+    std::free(fontSet);
 }
 
 FcObjectSet* APS5_VABI FcObjectSetBuild(const char* first, ...) {
@@ -114,10 +117,11 @@ FcObjectSet* APS5_VABI FcObjectSetBuild(const char* first, ...) {
 }
 
 void APS5_VABI FcObjectSetDestroy(FcObjectSet* set) {
-    if (!set) return;
-    for (int i = 0; i < set->nobject; ++i)
-        std::free(const_cast<char*>(set->objects[i]));
-    std::free(set);
+    auto* const objectSet = set;
+    if (!objectSet) return;
+    for (int i = 0; i < objectSet->nobject; ++i)
+        std::free(const_cast<char*>(objectSet->objects[i]));
+    std::free(objectSet);
 }
 
 }

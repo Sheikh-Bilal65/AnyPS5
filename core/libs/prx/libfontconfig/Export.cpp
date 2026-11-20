@@ -85,12 +85,14 @@ FcPattern* APS5_VABI FcFontMatch(FcConfig* config, FcPattern* pattern, FcResult*
 }
 
 uint32_t APS5_VABI FcCharSetSubtractCount(const FcCharSet* first, const FcCharSet* second) {
-    if (!first || !second) return 0;
+    const auto* const firstSet = first;
+    const auto* const secondSet = second;
+    if (!firstSet || !secondSet) return 0;
     uint32_t count = 0;
-    for (const auto& [number, leaf] : first->leaves) {
-        const auto found = second->leaves.find(number);
+    for (const auto& [number, leaf] : firstSet->leaves) {
+        const auto found = secondSet->leaves.find(number);
         for (size_t word = 0; word < leaf.size(); ++word) {
-            const uint32_t removed = found == second->leaves.end() ? 0 : found->second[word];
+            const uint32_t removed = found == secondSet->leaves.end() ? 0 : found->second[word];
             count += static_cast<uint32_t>(std::popcount(leaf[word] & ~removed));
         }
     }
@@ -106,15 +108,17 @@ FcFontSet* APS5_VABI FcFontSort(FcConfig* config, FcPattern* pattern, FcBool, Fc
 }
 
 int APS5_VABI FcCharSetMerge(FcCharSet* target, const FcCharSet* source, int* changed) {
-    if (!target || !source) return 0;
+    auto* const targetSet = target;
+    const auto* const sourceSet = source;
+    if (!targetSet || !sourceSet) return 0;
     if (changed) {
-        const int didChange = !IsSubset(*source, *target);
+        const int didChange = !IsSubset(*sourceSet, *targetSet);
         if (!CopyGuestOut(changed, &didChange, sizeof(didChange))) return 0;
         if (!didChange) return 1;
     }
     try {
-        for (const auto& [number, leaf] : source->leaves) {
-            CharSetLeaf& merged = target->leaves[number];
+        for (const auto& [number, leaf] : sourceSet->leaves) {
+            CharSetLeaf& merged = targetSet->leaves[number];
             for (size_t word = 0; word < leaf.size(); ++word) merged[word] |= leaf[word];
         }
     } catch (const std::bad_alloc&) {
@@ -124,7 +128,8 @@ int APS5_VABI FcCharSetMerge(FcCharSet* target, const FcCharSet* source, int* ch
 }
 
 void APS5_VABI FcCharSetDestroy(FcCharSet* set) {
-    if (set && set->references.fetch_sub(1, std::memory_order_acq_rel) == 1) delete set;
+    auto* const charSet = set;
+    if (charSet && charSet->references.fetch_sub(1, std::memory_order_acq_rel) == 1) delete charSet;
 }
 
 FcCharSet* APS5_VABI FcCharSetCreate() {
@@ -132,13 +137,14 @@ FcCharSet* APS5_VABI FcCharSetCreate() {
 }
 
 std::uint32_t APS5_VABI FcFreeTypeCharIndex(FreeType::GuestFaceRec* face, std::uint32_t character) {
-    if (!face) return 0;
+    auto* const guestFace = face;
+    if (!guestFace) return 0;
     constexpr std::array encodings{FT_ENCODING_UNICODE, FT_ENCODING_MS_SYMBOL};
-    const auto current = face->charmap ? face->charmap->encoding : 0;
+    const auto current = guestFace->charmap ? guestFace->charmap->encoding : 0;
     const std::size_t initial = current == encodings[1] ? 1 : 0;
     for (std::size_t offset = 0; offset < encodings.size(); ++offset) {
         const auto encoding = encodings[(initial + offset) % encodings.size()];
-        if ((!face->charmap || face->charmap->encoding != encoding) &&
+        if ((!guestFace->charmap || guestFace->charmap->encoding != encoding) &&
             FT_Select_Charmap_nid_postfix(face, encoding) != 0) continue;
         if (const auto glyph = FT_Get_Char_Index_nid_postfix(face, character)) return glyph;
         if (character < 0x100 && encoding == FT_ENCODING_MS_SYMBOL) {
@@ -149,11 +155,12 @@ std::uint32_t APS5_VABI FcFreeTypeCharIndex(FreeType::GuestFaceRec* face, std::u
 }
 
 int APS5_VABI FcCharSetAddChar(FcCharSet* set, uint32_t character) {
-    if (!set) return 0;
+    auto* const charSet = set;
+    if (!charSet) return 0;
     const uint16_t number = static_cast<uint16_t>(character >> 8);
-    if (character > 0x00ffffff && !set->leaves.contains(number)) return 0;
+    if (character > 0x00ffffff && !charSet->leaves.contains(number)) return 0;
     try {
-        CharSetLeaf& leaf = set->leaves[number];
+        CharSetLeaf& leaf = charSet->leaves[number];
         leaf[(character & 0xff) >> 5] |= uint32_t{1} << (character & 0x1f);
     } catch (const std::bad_alloc&) {
         return 0;

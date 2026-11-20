@@ -284,21 +284,22 @@ void APS5_VABI FcLangSetDestroy(FcLangSet* set) {
 }
 
 FcBool APS5_VABI FcLangSetAdd(FcLangSet* set, const FcChar8* language) {
-    if (!set || !language) NotImplemented_nid_no_patch(__func__);
+    auto* const langSet = set;
+    if (!langSet || !language) NotImplemented_nid_no_patch(__func__);
     const std::string_view name(reinterpret_cast<const char*>(language));
     const auto entry = std::lower_bound(std::begin(fontconfig_data::Languages), std::end(fontconfig_data::Languages), name,
         [](auto known, auto candidate) { return CompareLanguageIndex(known, candidate) < 0; });
     if (entry != std::end(fontconfig_data::Languages) && CompareLanguageIndex(*entry, name) == 0) {
-        set->known[entry - std::begin(fontconfig_data::Languages)] = true;
+        langSet->known[entry - std::begin(fontconfig_data::Languages)] = true;
         return 1;
     }
     try {
-        const auto [entry, inserted] = set->extra.emplace(name);
+        const auto [entry, inserted] = langSet->extra.emplace(name);
         if (inserted) {
             try {
-                set->extraOrder.emplace_back(name);
+                langSet->extraOrder.emplace_back(name);
             } catch (...) {
-                set->extra.erase(entry);
+                langSet->extra.erase(entry);
                 throw;
             }
         }
@@ -309,25 +310,26 @@ FcBool APS5_VABI FcLangSetAdd(FcLangSet* set, const FcChar8* language) {
 }
 
 FcLangResult APS5_VABI FcLangSetHasLang(const FcLangSet* set, const FcChar8* language) {
-    if (!set || !language) NotImplemented_nid_no_patch(__func__);
+    const auto* const langSet = set;
+    if (!langSet || !language) NotImplemented_nid_no_patch(__func__);
     const std::string_view name(reinterpret_cast<const char*>(language));
     const auto entry = std::lower_bound(std::begin(fontconfig_data::Languages), std::end(fontconfig_data::Languages), name,
         [](auto known, auto candidate) { return CompareLanguageIndex(known, candidate) < 0; });
     const auto index = static_cast<int>(entry - std::begin(fontconfig_data::Languages));
-    if (entry != std::end(fontconfig_data::Languages) && CompareLanguageIndex(*entry, name) == 0 && set->known[index])
+    if (entry != std::end(fontconfig_data::Languages) && CompareLanguageIndex(*entry, name) == 0 && langSet->known[index])
         return FcLangEqual;
     auto best = FcLangDifferentLang;
     for (int i = index - 1; i >= 0; --i) {
         const auto result = CompareLanguages(name, fontconfig_data::Languages[i]);
         if (result == FcLangDifferentLang) break;
-        if (set->known[i]) best = std::min(best, result);
+        if (langSet->known[i]) best = std::min(best, result);
     }
     for (auto i = static_cast<std::size_t>(index); i < std::size(fontconfig_data::Languages); ++i) {
         const auto result = CompareLanguages(name, fontconfig_data::Languages[i]);
         if (result == FcLangDifferentLang) break;
-        if (set->known[i]) best = std::min(best, result);
+        if (langSet->known[i]) best = std::min(best, result);
     }
-    for (const auto& extra : set->extra) best = std::min(best, CompareLanguages(name, extra));
+    for (const auto& extra : langSet->extra) best = std::min(best, CompareLanguages(name, extra));
     return best;
 }
 
@@ -336,31 +338,36 @@ FcPattern* APS5_VABI FcPatternCreate() {
 }
 
 void APS5_VABI FcPatternDestroy_nid_postfix(FcPattern* pattern) {
-    if (pattern && pattern->references.fetch_sub(1, std::memory_order_acq_rel) == 1) delete pattern;
+    auto* const pat = pattern;
+    if (pat && pat->references.fetch_sub(1, std::memory_order_acq_rel) == 1) delete pat;
 }
 
 void APS5_VABI FcPatternReference(FcPattern* pattern) {
-    if (!pattern) NotImplemented_nid_no_patch(__func__);
-    pattern->references.fetch_add(1, std::memory_order_relaxed);
+    auto* const pat = pattern;
+    if (!pat) NotImplemented_nid_no_patch(__func__);
+    pat->references.fetch_add(1, std::memory_order_relaxed);
 }
 
 FcPattern* APS5_VABI FcPatternDuplicate_nid_postfix(const FcPattern* pattern) {
-    if (!pattern) return nullptr;
+    const auto* const pat = pattern;
+    if (!pat) return nullptr;
     try {
-        return new FcPattern(*pattern);
+        return new FcPattern(*pat);
     } catch (const std::bad_alloc&) {
         return nullptr;
     }
 }
 
 FcPattern* APS5_VABI FcPatternFilter(FcPattern* pattern, const FcObjectSet* objects) {
-    if (!objects) return FcPatternDuplicate_nid_postfix(pattern);
-    if (!pattern) NotImplemented_nid_no_patch(__func__);
+    auto* const pat = pattern;
+    const auto* const objs = objects;
+    if (!objs) return FcPatternDuplicate_nid_postfix(pat);
+    if (!pat) NotImplemented_nid_no_patch(__func__);
     try {
         auto copy = std::make_unique<FcPattern>();
-        for (int i = 0; i < objects->nobject; ++i) {
-            const auto entry = pattern->objects.find(objects->objects[i]);
-            if (entry == pattern->objects.end()) continue;
+        for (int i = 0; i < objs->nobject; ++i) {
+            const auto entry = pat->objects.find(objs->objects[i]);
+            if (entry == pat->objects.end()) continue;
             auto& values = copy->objects[entry->first];
             for (const auto& value : entry->second) values.push_back(value);
         }
@@ -371,10 +378,12 @@ FcPattern* APS5_VABI FcPatternFilter(FcPattern* pattern, const FcObjectSet* obje
 }
 
 FcBool APS5_VABI FcPatternEqual(const FcPattern* first, const FcPattern* second) {
-    if (first == second) return 1;
-    if (!first || !second || first->objects.empty() || first->objects.size() != second->objects.size()) return 0;
-    auto right = second->objects.begin();
-    for (const auto& [object, values] : first->objects) {
+    const auto* const patFirst = first;
+    const auto* const patSecond = second;
+    if (patFirst == patSecond) return 1;
+    if (!patFirst || !patSecond || patFirst->objects.empty() || patFirst->objects.size() != patSecond->objects.size()) return 0;
+    auto right = patSecond->objects.begin();
+    for (const auto& [object, values] : patFirst->objects) {
         if (object != right->first || values.size() != right->second.size()) return 0;
         if (!std::equal(values.begin(), values.end(), right->second.begin(), ValuesEqual)) return 0;
         ++right;
@@ -383,27 +392,30 @@ FcBool APS5_VABI FcPatternEqual(const FcPattern* first, const FcPattern* second)
 }
 
 FcBool APS5_VABI FcPatternDel_nid_postfix(FcPattern* pattern, const char* object) {
-    if (!pattern || !object) NotImplemented_nid_no_patch(__func__);
-    const auto entry = pattern->objects.find(object);
-    if (entry == pattern->objects.end()) return 0;
-    pattern->objects.erase(entry);
+    auto* const pat = pattern;
+    if (!pat || !object) NotImplemented_nid_no_patch(__func__);
+    const auto entry = pat->objects.find(object);
+    if (entry == pat->objects.end()) return 0;
+    pat->objects.erase(entry);
     return 1;
 }
 
 FcBool APS5_VABI FcPatternRemove(FcPattern* pattern, const char* object, int id) {
-    if (!pattern || !object) NotImplemented_nid_no_patch(__func__);
-    const auto entry = pattern->objects.find(object);
-    if (entry == pattern->objects.end() || id < 0 || static_cast<std::size_t>(id) >= entry->second.size()) return 0;
+    auto* const pat = pattern;
+    if (!pat || !object) NotImplemented_nid_no_patch(__func__);
+    const auto entry = pat->objects.find(object);
+    if (entry == pat->objects.end() || id < 0 || static_cast<std::size_t>(id) >= entry->second.size()) return 0;
     entry->second.erase(std::next(entry->second.begin(), id));
-    if (entry->second.empty()) pattern->objects.erase(entry);
+    if (entry->second.empty()) pat->objects.erase(entry);
     return 1;
 }
 
 FcResult APS5_VABI FcPatternGet_nid_postfix(const FcPattern* pattern, const char* object, int id, FcValue* value) {
+    const auto* const pat = pattern;
     if (!object) NotImplemented_nid_no_patch(__func__);
-    if (!pattern) return FcResultNoMatch;
-    const auto entry = pattern->objects.find(object);
-    if (entry == pattern->objects.end()) return FcResultNoMatch;
+    if (!pat) return FcResultNoMatch;
+    const auto entry = pat->objects.find(object);
+    if (entry == pat->objects.end()) return FcResultNoMatch;
     if (id < 0 || static_cast<std::size_t>(id) >= entry->second.size()) return FcResultNoId;
     if (!value) NotImplemented_nid_no_patch(__func__);
     WriteGuestValue(value, std::next(entry->second.begin(), id)->View(), __func__);
@@ -492,12 +504,13 @@ FcBool APS5_VABI FcPatternAddCharSet(FcPattern* pattern, const char* object, con
 }
 
 FcBool APS5_VABI FcPatternAddLangSet(FcPattern* pattern, const char* object, const FcLangSet* value) {
+    const auto* const langVal = value;
     if (!pattern || !object) NotImplemented_nid_no_patch(__func__);
-    if (!value) return 0;
+    if (!langVal) return 0;
     try {
         PatternValue entry;
         entry.type = FcTypeLangSet;
-        entry.langset = std::make_unique<FcLangSet>(*value);
+        entry.langset = std::make_unique<FcLangSet>(*langVal);
         return AddValue(pattern, object, std::move(entry));
     } catch (const std::bad_alloc&) { return 0; }
 }
