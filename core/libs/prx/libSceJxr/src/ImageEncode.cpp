@@ -40,14 +40,16 @@ std::int64_t APS5_VABI PKImageEncode_SetPixelFormat_nid_postfix(Jxr::ImageEncode
 }
 
 std::int64_t APS5_VABI PKImageEncode_SetSize_nid_postfix(Jxr::ImageEncode* encoder, std::int32_t width, std::int32_t height) {
-    Encoder(encoder, __func__)->width = static_cast<std::uint32_t>(width);
-    encoder->height = static_cast<std::uint32_t>(height);
+    auto* const enc = encoder;
+    Encoder(enc, __func__)->width = static_cast<std::uint32_t>(width);
+    enc->height = static_cast<std::uint32_t>(height);
     return Success;
 }
 
 std::int64_t APS5_VABI PKImageEncode_SetResolution_nid_postfix(Jxr::ImageEncode* encoder, float horizontal, float vertical) {
-    Encoder(encoder, __func__)->resolutionX = horizontal;
-    encoder->resolutionY = vertical;
+    auto* const enc = encoder;
+    Encoder(enc, __func__)->resolutionX = horizontal;
+    enc->resolutionY = vertical;
     return Success;
 }
 
@@ -64,27 +66,31 @@ std::int64_t APS5_VABI PKImageEncode_WritePixels_nid_postfix(Jxr::ImageEncode*, 
 }
 
 std::int64_t APS5_VABI PKImageEncode_Initialize_nid_postfix(Jxr::ImageEncode* encoder, Jxr::Stream* stream, void*, std::size_t) {
-    Encoder(encoder, __func__)->stream = stream;
-    encoder->pixelFormat = JxrGuest_GUID_PKPixelFormatDontCare_nid_no_patch;
-    encoder->resolutionX = 96;
-    encoder->resolutionY = 96;
-    encoder->frames = 1;
-    if (!stream || !stream->getPosition) throw std::invalid_argument("PKImageEncode_Initialize requires a stream with GetPos");
-    return stream->getPosition(stream, &encoder->start);
+    auto* const enc = encoder;
+    auto* const strm = stream;
+    Encoder(enc, __func__)->stream = strm;
+    enc->pixelFormat = JxrGuest_GUID_PKPixelFormatDontCare_nid_no_patch;
+    enc->resolutionX = 96;
+    enc->resolutionY = 96;
+    enc->frames = 1;
+    if (!strm || !strm->getPosition) throw std::invalid_argument("PKImageEncode_Initialize requires a stream with GetPos");
+    return strm->getPosition(strm, &enc->start);
 }
 
 std::int64_t APS5_VABI PKImageEncode_Release_nid_postfix(Jxr::ImageEncode** encoder) {
-    if (!encoder || !*encoder || !(*encoder)->stream || !(*encoder)->stream->close)
+    auto** const enc = encoder;
+    if (!enc || !*enc || !(*enc)->stream || !(*enc)->stream->close)
         throw std::invalid_argument("PKImageEncode_Release requires an encoder with a stream");
-    (*encoder)->stream->close(&(*encoder)->stream);
-    return PKFree_nid_postfix(reinterpret_cast<void**>(encoder));
+    (*enc)->stream->close(&(*enc)->stream);
+    return PKFree_nid_postfix(reinterpret_cast<void**>(enc));
 }
 
 std::int64_t APS5_VABI PKImageEncode_Create_nid_postfix(Jxr::ImageEncode** encoder) {
-    if (!encoder) throw std::invalid_argument("PKImageEncode_Create requires an output");
-    *encoder = static_cast<Jxr::ImageEncode*>(calloc_nid_postfix(1, sizeof(Jxr::ImageEncode)));
-    if (!*encoder) return OutOfMemory;
-    auto* created = *encoder;
+    auto** const outEncoder = encoder;
+    if (!outEncoder) throw std::invalid_argument("PKImageEncode_Create requires an output");
+    *outEncoder = static_cast<Jxr::ImageEncode*>(calloc_nid_postfix(1, sizeof(Jxr::ImageEncode)));
+    if (!*outEncoder) return OutOfMemory;
+    auto* created = *outEncoder;
     created->initialize = &PKImageEncode_Initialize_nid_postfix;
     created->terminate = reinterpret_cast<decltype(created->terminate)>(&PKImageEncode_Terminate_nid_postfix);
     created->setPixelFormat = &PKImageEncode_SetPixelFormat_nid_postfix;

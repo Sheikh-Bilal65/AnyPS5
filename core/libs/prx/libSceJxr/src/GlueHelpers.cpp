@@ -198,14 +198,15 @@ std::int64_t APS5_VABI PKFormatConverter_Initialize_nid_postfix(JxrGuestFormatCo
 }
 
 std::int64_t APS5_VABI PKAllocAligned_nid_postfix(void** memory, std::size_t size, std::size_t alignment) {
-    if (!memory) throw std::invalid_argument("PKAllocAligned requires an output pointer");
-    *memory = nullptr;
+    auto** const outMemory = memory;
+    if (!outMemory) throw std::invalid_argument("PKAllocAligned requires an output pointer");
+    *outMemory = nullptr;
     if (alignment < sizeof(void*))
         throw std::invalid_argument("PKAllocAligned: alignments below 8 can leave no room for the original pointer");
     constexpr auto maximum = std::numeric_limits<std::size_t>::max();
     if (size > maximum - sizeof(void*) || alignment - 1 > maximum - sizeof(void*) - size)
         throw std::length_error("PKAllocAligned: block size overflows size_t");
-    return JxrAllocAligned_nid_no_patch(memory, size, alignment);
+    return JxrAllocAligned_nid_no_patch(outMemory, size, alignment);
 }
 
 std::int64_t APS5_VABI PKFreeAligned_nid_postfix(void** memory) {
@@ -272,9 +273,10 @@ std::int64_t APS5_VABI PKImageDecode_GetDescriptiveMetadata_nid_postfix(void* de
 }
 
 std::int64_t APS5_VABI PKImageDecode_Release_nid_postfix(void** decoder) {
-    if (!decoder || !*decoder) throw std::invalid_argument("PKImageDecode_Release requires a decoder");
-    if (!JxrDecodeHasClose_nid_no_patch(*decoder)) throw std::invalid_argument("PKImageDecode_Release requires a stream Close callback when the decoder owns its stream");
-    return JxrDecodeRelease_nid_no_patch(decoder);
+    auto** const dec = decoder;
+    if (!dec || !*dec) throw std::invalid_argument("PKImageDecode_Release requires a decoder");
+    if (!JxrDecodeHasClose_nid_no_patch(*dec)) throw std::invalid_argument("PKImageDecode_Release requires a stream Close callback when the decoder owns its stream");
+    return JxrDecodeRelease_nid_no_patch(dec);
 }
 
 std::int64_t APS5_VABI PKImageDecode_Create_nid_postfix(void** decoder) {

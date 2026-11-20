@@ -113,55 +113,59 @@ extern "C" {
 
 APS5_DUMMY_FUN
 std::int64_t APS5_VABI PKFree_nid_postfix(void** memory) {
-    if (memory != nullptr) {
-        free_nid_postfix(*memory);
+    auto** const mem = memory;
+    if (mem != nullptr) {
+        free_nid_postfix(*mem);
 
-        *memory = nullptr;
+        *mem = nullptr;
     }
     return WmpErrSuccess;
 }
 
 std::int64_t APS5_VABI readIS_nid_postfix(void*, Jxr::BitIo* io) {
-    if (!io) APS5_INVALID_ARG_EX;
+    auto* const bitIo = io;
+    if (!bitIo) APS5_INVALID_ARG_EX;
     constexpr std::uintptr_t packetSize = 4096;
-    const auto start = reinterpret_cast<std::uintptr_t>(io->start);
-    if (((start ^ reinterpret_cast<std::uintptr_t>(io->current)) & packetSize) == 0) return WmpErrSuccess;
-    auto* stream = io->stream;
+    const auto start = reinterpret_cast<std::uintptr_t>(bitIo->start);
+    if (((start ^ reinterpret_cast<std::uintptr_t>(bitIo->current)) & packetSize) == 0) return WmpErrSuccess;
+    auto* stream = bitIo->stream;
     if (!stream || !stream->setPosition) APS5_INVALID_ARG_EX;
-    stream->setPosition(stream, io->referenceOffset);
+    stream->setPosition(stream, bitIo->referenceOffset);
     if (!stream->read) APS5_INVALID_ARG_EX;
     {
-        GuestArena::HostWrite access(io->start, packetSize);
+        GuestArena::HostWrite access(bitIo->start, packetSize);
         if (!access.Open()) APS5_INVALID_ARG_EX;
-        stream->read(stream, io->start, packetSize);
+        stream->read(stream, bitIo->start, packetSize);
     }
-    io->referenceOffset += packetSize;
-    if (!io->start) APS5_INVALID_ARG_EX;
-    std::memcpy(&io->shadow, io->start, sizeof(io->shadow));
-    const auto mask = static_cast<std::uintptr_t>(static_cast<std::intptr_t>(io->mask));
-    io->start = reinterpret_cast<std::uint8_t*>((reinterpret_cast<std::uintptr_t>(io->start) + packetSize) & mask);
+    bitIo->referenceOffset += packetSize;
+    if (!bitIo->start) APS5_INVALID_ARG_EX;
+    std::memcpy(&bitIo->shadow, bitIo->start, sizeof(bitIo->shadow));
+    const auto mask = static_cast<std::uintptr_t>(static_cast<std::intptr_t>(bitIo->mask));
+    bitIo->start = reinterpret_cast<std::uint8_t*>((reinterpret_cast<std::uintptr_t>(bitIo->start) + packetSize) & mask);
     return WmpErrSuccess;
 }
 
 std::int64_t APS5_VABI writeIS_nid_postfix(void*, Jxr::BitIo* io) {
-    if (!io) APS5_INVALID_ARG_EX;
+    auto* const bitIo = io;
+    if (!bitIo) APS5_INVALID_ARG_EX;
     constexpr std::uintptr_t packetSize = 4096;
-    const auto start = reinterpret_cast<std::uintptr_t>(io->start);
-    if (((start ^ reinterpret_cast<std::uintptr_t>(io->current)) & packetSize) == 0) return WmpErrSuccess;
-    if (!io->stream || !io->stream->write) APS5_INVALID_ARG_EX;
-    const auto result = io->stream->write(io->stream, io->start, packetSize);
+    const auto start = reinterpret_cast<std::uintptr_t>(bitIo->start);
+    if (((start ^ reinterpret_cast<std::uintptr_t>(bitIo->current)) & packetSize) == 0) return WmpErrSuccess;
+    if (!bitIo->stream || !bitIo->stream->write) APS5_INVALID_ARG_EX;
+    const auto result = bitIo->stream->write(bitIo->stream, bitIo->start, packetSize);
     if (result < 0) return result;
-    if (!io->start) APS5_INVALID_ARG_EX;
-    const auto mask = static_cast<std::uintptr_t>(static_cast<std::intptr_t>(io->mask));
-    io->start = reinterpret_cast<std::uint8_t*>((reinterpret_cast<std::uintptr_t>(io->start) + packetSize) & mask);
+    if (!bitIo->start) APS5_INVALID_ARG_EX;
+    const auto mask = static_cast<std::uintptr_t>(static_cast<std::intptr_t>(bitIo->mask));
+    bitIo->start = reinterpret_cast<std::uint8_t*>((reinterpret_cast<std::uintptr_t>(bitIo->start) + packetSize) & mask);
     return result;
 }
 
 std::int64_t APS5_VABI CreateWS_Memory_nid_postfix(Jxr::Stream** stream, void* buffer, std::size_t size) {
-    if (!stream) APS5_INVALID_ARG_EX;
-    const auto result = WMPAlloc_nid_postfix(reinterpret_cast<void**>(stream), sizeof(Jxr::Stream));
+    auto** const outStream = stream;
+    if (!outStream) APS5_INVALID_ARG_EX;
+    const auto result = WMPAlloc_nid_postfix(reinterpret_cast<void**>(outStream), sizeof(Jxr::Stream));
     if (result < 0) return result;
-    auto* created = *stream;
+    auto* created = *outStream;
     created->state[MemoryBuffer] = reinterpret_cast<std::uintptr_t>(buffer);
     created->state[MemorySize] = size;
     created->state[MemoryPosition] = 0;
@@ -200,12 +204,14 @@ std::int64_t APS5_VABI GetPosWS_Memory_nid_postfix(Jxr::Stream* stream, std::siz
 }
 
 std::int64_t APS5_VABI PKCodecFactory_CreateCodec_nid_postfix(const std::uint32_t* iid, void** codec) {
-    if (!iid || !codec) APS5_INVALID_ARG_EX;
-    if (*iid == JxrGuest_IID_PKImageWmpEncode_nid_no_patch) {
-        return PKImageEncode_Create_WMP_nid_postfix(reinterpret_cast<Jxr::ImageEncode**>(codec));
+    const auto* const id = iid;
+    auto** const outCodec = codec;
+    if (!id || !outCodec) APS5_INVALID_ARG_EX;
+    if (*id == JxrGuest_IID_PKImageWmpEncode_nid_no_patch) {
+        return PKImageEncode_Create_WMP_nid_postfix(reinterpret_cast<Jxr::ImageEncode**>(outCodec));
     }
-    if (*iid == JxrGuest_IID_PKImageWmpDecode_nid_no_patch) {
-        return PKImageDecode_Create_WMP_nid_postfix(codec);
+    if (*id == JxrGuest_IID_PKImageWmpDecode_nid_no_patch) {
+        return PKImageDecode_Create_WMP_nid_postfix(outCodec);
     }
     return WmpErrUnsupportedFormat;
 }
@@ -215,10 +221,11 @@ int APS5_VABI PKCodecFactory_CreateDecoderFromFile_nid_postfix() {
 }
 
 std::int64_t APS5_VABI PKCodecFactory_CreateFormatConverter_nid_postfix(void** converter) {
-    if (!converter) APS5_INVALID_ARG_EX;
-    const auto result = AllocateZeroed(converter, sizeof(Jxr::FormatConverter));
+    auto** const outConv = converter;
+    if (!outConv) APS5_INVALID_ARG_EX;
+    const auto result = AllocateZeroed(outConv, sizeof(Jxr::FormatConverter));
     if (result != WmpErrSuccess) return result;
-    auto* value = static_cast<Jxr::FormatConverter*>(*converter);
+    auto* value = static_cast<Jxr::FormatConverter*>(*outConv);
     value->initialize = Slot<decltype(value->initialize)>(&PKFormatConverter_Initialize_nid_postfix);
     value->initializeConvert = Slot<decltype(value->initializeConvert)>(&PKFormatConverter_InitializeConvert_nid_postfix);
     value->getPixelFormat = Slot<decltype(value->getPixelFormat)>(&PKFormatConverter_GetPixelFormat_nid_postfix);
@@ -236,10 +243,11 @@ std::int64_t APS5_VABI PKCreateCodecFactory_Release_nid_postfix(void** factory) 
 }
 
 std::int64_t APS5_VABI PKCreateCodecFactory_nid_postfix(void** factory, std::uint32_t) {
-    if (!factory) APS5_INVALID_ARG_EX;
-    const auto result = AllocateZeroed(factory, sizeof(Jxr::CodecFactory));
+    auto** const outFac = factory;
+    if (!outFac) APS5_INVALID_ARG_EX;
+    const auto result = AllocateZeroed(outFac, sizeof(Jxr::CodecFactory));
     if (result != WmpErrSuccess) return result;
-    auto* value = static_cast<Jxr::CodecFactory*>(*factory);
+    auto* value = static_cast<Jxr::CodecFactory*>(*outFac);
     value->createCodec = &PKCodecFactory_CreateCodec_nid_postfix;
     value->createDecoderFromFile = Slot<decltype(value->createDecoderFromFile)>(&PKCodecFactory_CreateDecoderFromFile_nid_postfix);
     value->createFormatConverter = &PKCodecFactory_CreateFormatConverter_nid_postfix;
@@ -257,10 +265,11 @@ std::int64_t APS5_VABI PKCreateFactory_Release_nid_postfix(void** factory) {
 }
 
 std::int64_t APS5_VABI PKCreateFactory_nid_postfix(void** factory, std::uint32_t) {
-    if (!factory) APS5_INVALID_ARG_EX;
-    const auto result = AllocateZeroed(factory, sizeof(Jxr::Factory));
+    auto** const outFac = factory;
+    if (!outFac) APS5_INVALID_ARG_EX;
+    const auto result = AllocateZeroed(outFac, sizeof(Jxr::Factory));
     if (result != WmpErrSuccess) return result;
-    auto* value = static_cast<Jxr::Factory*>(*factory);
+    auto* value = static_cast<Jxr::Factory*>(*outFac);
     value->createStream = Slot<decltype(value->createStream)>(&PKCreateFactory_CreateStream_nid_postfix);
     value->createStreamFromFilename = &CreateStreamFromFilename_nid_no_patch;
     value->createStreamFromMemory = Slot<decltype(value->createStreamFromMemory)>(&CreateWS_Memory_nid_postfix);
@@ -455,7 +464,8 @@ std::int64_t APS5_VABI PKImageEncode_SetXMPMetadata_WMP_nid_postfix(tagPKImageEn
         throw std::invalid_argument("XMP metadata setter requires input bytes");
     }
     auto* temporary = static_cast<char*>(allocation);
-    if (size != 0) std::memcpy(temporary, metadata, size);
+    const void* const meta = metadata;
+    if (size != 0) std::memcpy(temporary, meta, size);
     temporary[size] = '\0';
     const auto inputSize = std::strlen(temporary);
     auto* formatBegin = std::strstr(temporary, opening);
@@ -529,16 +539,18 @@ std::int64_t APS5_VABI SetPosWS_Memory_nid_postfix(Jxr::Stream* stream, std::siz
 }
 
 std::int64_t APS5_VABI WMPAlloc_nid_postfix(void** memory, std::size_t size) {
-    if (!memory) APS5_INVALID_ARG_EX;
-    *memory = calloc_nid_postfix(1, size);
-    return *memory ? WmpErrSuccess : WmpErrOutOfMemory;
+    auto** const mem = memory;
+    if (!mem) APS5_INVALID_ARG_EX;
+    *mem = calloc_nid_postfix(1, size);
+    return *mem ? WmpErrSuccess : WmpErrOutOfMemory;
 }
 
 std::int64_t APS5_VABI WMPFree_nid_postfix(void** memory) {
-    if (!memory) APS5_INVALID_ARG_EX;
-    if (*memory) {
-        free_nid_postfix(*memory);
-        *memory = nullptr;
+    auto** const mem = memory;
+    if (!mem) APS5_INVALID_ARG_EX;
+    if (*mem) {
+        free_nid_postfix(*mem);
+        *mem = nullptr;
     }
     return WmpErrSuccess;
 }
@@ -565,41 +577,43 @@ std::int64_t APS5_VABI WriteWS_Memory_nid_postfix(Jxr::Stream* stream, const voi
 }
 
 std::int64_t APS5_VABI detachISRead_nid_postfix(void* codec, Jxr::BitIo* io) {
-    if (!io || !io->stream) APS5_INVALID_ARG_EX;
-    auto* stream = io->stream;
-    flushToByte_nid_postfix(io);
-    if ((io->bitsUsed & 7) != 0) APS5_INVALID_ARG_EX;
-    const auto result = readIS_nid_postfix(codec, io);
+    auto* const bitIo = io;
+    if (!bitIo || !bitIo->stream) APS5_INVALID_ARG_EX;
+    auto* stream = bitIo->stream;
+    flushToByte_nid_postfix(bitIo);
+    if ((bitIo->bitsUsed & 7) != 0) APS5_INVALID_ARG_EX;
+    const auto result = readIS_nid_postfix(codec, bitIo);
     if (result < 0) return result;
     constexpr std::uintptr_t packetSize = 8192;
-    if (!io->start || !io->current) APS5_INVALID_ARG_EX;
-    const auto start = reinterpret_cast<std::uintptr_t>(io->start);
-    const auto current = reinterpret_cast<std::uintptr_t>(io->current);
-    const auto byteOffset = static_cast<std::uintptr_t>(io->bitsUsed / 8);
+    if (!bitIo->start || !bitIo->current) APS5_INVALID_ARG_EX;
+    const auto start = reinterpret_cast<std::uintptr_t>(bitIo->start);
+    const auto current = reinterpret_cast<std::uintptr_t>(bitIo->current);
+    const auto byteOffset = static_cast<std::uintptr_t>(bitIo->bitsUsed / 8);
     if (start > UINTPTR_MAX - packetSize || current > UINTPTR_MAX - byteOffset) APS5_INVALID_ARG_EX;
     const auto end = start + packetSize;
     const auto position = current + byteOffset;
     const auto remaining = end - position;
     if (!stream->setPosition) APS5_INVALID_ARG_EX;
-    stream->setPosition(stream, io->referenceOffset - remaining);
-    io->stream = nullptr;
+    stream->setPosition(stream, bitIo->referenceOffset - remaining);
+    bitIo->stream = nullptr;
     return result;
 }
 
 std::int64_t APS5_VABI detachISWrite_nid_postfix(void* codec, Jxr::BitIo* io) {
-    if (!io) APS5_INVALID_ARG_EX;
-    if ((io->bitsUsed & 7) != 0) APS5_INVALID_ARG_EX;
-    const auto result = writeIS_nid_postfix(codec, io);
+    auto* const bitIo = io;
+    if (!bitIo) APS5_INVALID_ARG_EX;
+    if ((bitIo->bitsUsed & 7) != 0) APS5_INVALID_ARG_EX;
+    const auto result = writeIS_nid_postfix(codec, bitIo);
     if (result < 0) return result;
-    if (!io->stream || !io->stream->write || !io->start || !io->current) APS5_INVALID_ARG_EX;
-    const auto start = reinterpret_cast<std::uintptr_t>(io->start);
-    const auto current = reinterpret_cast<std::uintptr_t>(io->current);
-    const auto byteCount = static_cast<std::uintptr_t>(io->bitsUsed / 8);
+    if (!bitIo->stream || !bitIo->stream->write || !bitIo->start || !bitIo->current) APS5_INVALID_ARG_EX;
+    const auto start = reinterpret_cast<std::uintptr_t>(bitIo->start);
+    const auto current = reinterpret_cast<std::uintptr_t>(bitIo->current);
+    const auto byteCount = static_cast<std::uintptr_t>(bitIo->bitsUsed / 8);
     if (current > UINTPTR_MAX - byteCount) APS5_INVALID_ARG_EX;
     const auto end = current + byteCount;
-    const auto writeResult = io->stream->write(io->stream, io->start, end - start);
+    const auto writeResult = bitIo->stream->write(bitIo->stream, bitIo->start, end - start);
     if (writeResult < 0) return writeResult;
-    io->stream = nullptr;
+    bitIo->stream = nullptr;
     return writeResult;
 }
 

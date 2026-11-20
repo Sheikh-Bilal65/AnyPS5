@@ -12,13 +12,14 @@ extern "C" long JxrMetadataFree_nid_no_patch(void** memory) {
 }
 
 extern "C" void APS5_VABI FreeDescMetadata_nid_postfix(Jxr::MetadataVariant* value) {
-    if (!value) throw std::invalid_argument("FreeDescMetadata requires a metadata record");
-    const auto type = value->type;
+    auto* const meta = value;
+    if (!meta) throw std::invalid_argument("FreeDescMetadata requires a metadata record");
+    const auto type = meta->type;
     if (type != 0 && type != 18 && type != 19 && type != 30 && type != 31)
         throw std::invalid_argument("FreeDescMetadata: unsupported metadata tag");
-    std::array<std::byte, sizeof(value->value)> payload;
-    std::memcpy(payload.data(), &value->value, payload.size());
+    std::array<std::byte, sizeof(meta->value)> payload;
+    std::memcpy(payload.data(), &meta->value, payload.size());
     JxrMetadataCleanup_nid_no_patch(type, payload.data());
     if (type == 30 || type == 31)
-        std::memcpy(&value->value, payload.data(), payload.size());
+        std::memcpy(&meta->value, payload.data(), payload.size());
 }

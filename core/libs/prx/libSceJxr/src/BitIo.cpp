@@ -75,52 +75,57 @@ extern "C" {
 
 std::int64_t APS5_VABI attachISRead_nid_postfix(Jxr::BitIo* io, Jxr::Stream* stream, void* codec) {
     static_cast<void>(codec);
-    Require(io != nullptr, __func__, "null bit state");
-    Require(stream != nullptr, __func__, "null stream");
-    Require(stream->getPosition != nullptr, __func__, "null get-position callback");
-    stream->getPosition(stream, &io->referenceOffset);
-    const auto ioAddress = reinterpret_cast<std::uintptr_t>(io);
+    auto* const bitIo = io;
+    auto* const strm = stream;
+    Require(bitIo != nullptr, __func__, "null bit state");
+    Require(strm != nullptr, __func__, "null stream");
+    Require(strm->getPosition != nullptr, __func__, "null get-position callback");
+    strm->getPosition(strm, &bitIo->referenceOffset);
+    const auto ioAddress = reinterpret_cast<std::uintptr_t>(bitIo);
     Require(ioAddress >= 8192, __func__, "bit state address underflows the packet buffer");
     auto* const start = reinterpret_cast<std::uint8_t*>(ioAddress - 8192);
-    io->start = start;
-    io->current = start;
-    Require(stream->setPosition != nullptr, __func__, "null set-position callback");
-    stream->setPosition(stream, io->referenceOffset);
-    Require(stream->read != nullptr, __func__, "null read callback");
-    stream->read(stream, io->start, 8192);
-    io->referenceOffset += 8192;
-    io->accumulator = LoadBigEndian(io->start);
-    io->bitsUsed = 0;
-    io->mask = ~static_cast<std::int32_t>(8192) & ~std::int32_t{1};
-    io->stream = stream;
+    bitIo->start = start;
+    bitIo->current = start;
+    Require(strm->setPosition != nullptr, __func__, "null set-position callback");
+    strm->setPosition(strm, bitIo->referenceOffset);
+    Require(strm->read != nullptr, __func__, "null read callback");
+    strm->read(strm, bitIo->start, 8192);
+    bitIo->referenceOffset += 8192;
+    bitIo->accumulator = LoadBigEndian(bitIo->start);
+    bitIo->bitsUsed = 0;
+    bitIo->mask = ~static_cast<std::int32_t>(8192) & ~std::int32_t{1};
+    bitIo->stream = strm;
     return 0;
 }
 
 std::int64_t APS5_VABI attachISWrite_nid_postfix(Jxr::BitIo* io, Jxr::Stream* stream) {
-    Require(io != nullptr, __func__, "null bit state");
+    auto* const bitIo = io;
+    auto* const strm = stream;
+    Require(bitIo != nullptr, __func__, "null bit state");
     Jxr::BitIo guestIo{};
     const int ioReadErrno = errno;
-    const bool copiedIo = GuestCopyIn_nid_no_patch(&guestIo, io, sizeof(guestIo));
+    const bool copiedIo = GuestCopyIn_nid_no_patch(&guestIo, bitIo, sizeof(guestIo));
     errno = ioReadErrno;
     Require(copiedIo, __func__, "unreadable bit state");
-    Require(stream != nullptr, __func__, "null stream");
+    Require(strm != nullptr, __func__, "null stream");
     Jxr::Stream guestStream{};
     const int streamErrno = errno;
-    const bool copiedStream = GuestCopyIn_nid_no_patch(&guestStream, stream, sizeof(guestStream));
+    const bool copiedStream = GuestCopyIn_nid_no_patch(&guestStream, strm, sizeof(guestStream));
     errno = streamErrno;
     Require(copiedStream && guestStream.getPosition != nullptr, __func__, "missing stream position callback");
-    const auto address = reinterpret_cast<std::uintptr_t>(io);
+    const auto address = reinterpret_cast<std::uintptr_t>(bitIo);
     Require(address >= 8192, __func__, "bit state address underflows the packet buffer");
-    guestStream.getPosition(stream, &io->referenceOffset);
+    guestStream.getPosition(strm, &guestIo.referenceOffset);
     guestIo.start = reinterpret_cast<std::uint8_t*>(address - 8192);
     guestIo.current = guestIo.start;
     guestIo.accumulator = 0;
     guestIo.bitsUsed = 0;
     guestIo.mask = ~8192;
-    guestIo.stream = stream;
+    guestIo.stream = strm;
     const int ioWriteErrno = errno;
+    auto* const accumDst = reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t>(bitIo) + offsetof(Jxr::BitIo, accumulator));
     const bool wroteIo = GuestCopyOut_nid_no_patch(
-        &io->accumulator,
+        accumDst,
         &guestIo.accumulator,
         offsetof(Jxr::BitIo, referenceOffset) - offsetof(Jxr::BitIo, accumulator));
     errno = ioWriteErrno;

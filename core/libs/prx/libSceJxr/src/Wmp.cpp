@@ -189,9 +189,10 @@ void JxrWmpMissingCallback_nid_no_patch(const char* name) {
 }
 
 std::int64_t APS5_VABI PKImageEncode_Create_WMP_nid_postfix(Jxr::ImageEncode** encoder) {
-    const auto result = PKImageEncode_Create_nid_postfix(encoder);
+    auto** const enc = encoder;
+    const auto result = PKImageEncode_Create_nid_postfix(enc);
     if (result < 0) return result;
-    auto* created = *encoder;
+    auto* created = *enc;
     Forget(created);
     created->initialize = &EncodeInitialize;
     created->terminate = &EncodeTerminate;
@@ -209,6 +210,7 @@ std::int64_t APS5_VABI PKImageEncode_Create_WMP_nid_postfix(Jxr::ImageEncode** e
 }
 
 std::int64_t APS5_VABI PKImageDecode_Create_WMP_nid_postfix(void** decoder) {
+    auto** const dec = decoder;
     static const JxrWmpDecodeSlots slots{
         DecodeInitialize,
         DecodeGetSize,
@@ -217,10 +219,10 @@ std::int64_t APS5_VABI PKImageDecode_Create_WMP_nid_postfix(void** decoder) {
         DecodeGetColorContext,
         DecodeGetDescriptiveMetadata,
         DecodeRelease};
-    const auto result = PKImageDecode_Create_nid_postfix(decoder);
+    const auto result = PKImageDecode_Create_nid_postfix(dec);
     if (result < 0) return result;
-    Forget(*decoder);
-    JxrWmpDecodeInstall_nid_no_patch(*decoder, &slots);
+    Forget(*dec);
+    JxrWmpDecodeInstall_nid_no_patch(*dec, &slots);
     return result;
 }
 
