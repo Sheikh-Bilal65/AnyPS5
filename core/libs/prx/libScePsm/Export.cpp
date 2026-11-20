@@ -26,8 +26,10 @@ char* APS5_VABI ScePsmMonoArrayAddrWithSize(void* array, int size, std::uintptr_
 }
 
 std::uintptr_t APS5_VABI ScePsmMonoArrayLength(const void* array) {
-    std::uint32_t length;
-    std::memcpy(&length, static_cast<const char*>(array) + kMonoArrayLengthOffset, sizeof(length));
+    std::uint32_t length = 0;
+    if (!array || !GuestCopyIn_nid_no_patch(&length, static_cast<const char*>(array) + kMonoArrayLengthOffset, sizeof(length))) {
+        NotImplemented_nid_no_patch(__func__);
+    }
     return length;
 }
 
@@ -41,7 +43,9 @@ void APS5_VABI ScePsmMonoFree(void* memory) {
 }
 
 void APS5_VABI ScePsmMonoGcWbarrierGenericStore(void* slot, void* value) {
-    std::memcpy(slot, &value, sizeof(value));
+    if (!slot || !GuestCopyOut_nid_no_patch(slot, &value, sizeof(value))) {
+        NotImplemented_nid_no_patch(__func__);
+    }
 }
 
 std::uint16_t* APS5_VABI ScePsmMonoStringChars(void* string) {
@@ -54,8 +58,10 @@ int APS5_VABI ScePsmMonoStringFromUtf16() {
 }
 
 int APS5_VABI ScePsmMonoStringLength(const void* string) {
-    std::int32_t length;
-    std::memcpy(&length, static_cast<const char*>(string) + kMonoStringLengthOffset, sizeof(length));
+    std::int32_t length = 0;
+    if (!string || !GuestCopyIn_nid_no_patch(&length, static_cast<const char*>(string) + kMonoStringLengthOffset, sizeof(length))) {
+        NotImplemented_nid_no_patch(__func__);
+    }
     return length;
 }
 

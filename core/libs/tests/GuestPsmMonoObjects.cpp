@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <stdexcept>
 
 namespace {
 
@@ -61,6 +62,30 @@ int main() {
     void* slot = nullptr;
     ScePsmMonoGcWbarrierGenericStore(&slot, &array);
     Require(slot == &array, "write barrier store");
+
+    bool arrayLengthThrew = false;
+    try {
+        ScePsmMonoArrayLength(reinterpret_cast<const void*>(0xdeadbeef));
+    } catch (const std::runtime_error&) {
+        arrayLengthThrew = true;
+    }
+    Require(arrayLengthThrew, "unmapped array length throws");
+
+    bool stringLengthThrew = false;
+    try {
+        ScePsmMonoStringLength(reinterpret_cast<const void*>(0xdeadbeef));
+    } catch (const std::runtime_error&) {
+        stringLengthThrew = true;
+    }
+    Require(stringLengthThrew, "unmapped string length throws");
+
+    bool barrierThrew = false;
+    try {
+        ScePsmMonoGcWbarrierGenericStore(reinterpret_cast<void*>(0xdeadbeef), &array);
+    } catch (const std::runtime_error&) {
+        barrierThrew = true;
+    }
+    Require(barrierThrew, "unmapped barrier store throws");
 
     std::puts("Psm Mono object tests passed");
     return 0;
