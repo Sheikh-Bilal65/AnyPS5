@@ -36,7 +36,10 @@ SceImeBackendParam MakeParam() {
 void CheckValidation() {
     SceImeBackendParam param = MakeParam();
     Require(sceImeBackendOpen(nullptr, nullptr) == kNullArgument);
+    Require(sceImeBackendOpen(reinterpret_cast<const SceImeBackendParam*>(0xdeadbeef), nullptr) == kNullArgument);
     Require(sceImeBackendOpen(&param, &param) == kInvalidReservedArgument);
+    Require(sceImeBackendGetCandidateSelect(reinterpret_cast<std::uint16_t*>(0xdeadbeef)) == kNullArgument);
+    Require(sceImeBackendGetConvertMode(reinterpret_cast<int*>(0xdeadbeef)) == kNullArgument);
 
     param.mode = -1;
     Require(sceImeBackendOpen(&param, nullptr) == kInvalidMode);
