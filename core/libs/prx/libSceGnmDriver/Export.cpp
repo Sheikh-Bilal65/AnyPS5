@@ -445,71 +445,83 @@ int APS5_VABI sceGnmSetPsShader(std::uint32_t* cmd, std::uint32_t size, const st
         Nop(cmd, 0x20);
         return 0;
     }
-    if (regs[1] != 0) return -1;
-    cmd = Emit(cmd, OpSetShReg, {8, regs[0], 0});
-    cmd = Emit(cmd, OpSetShReg, {10, regs[2], regs[3]});
-    cmd = Emit(cmd, OpSetContextReg, {0x1c4, regs[4], regs[5]});
-    cmd = Emit(cmd, OpSetContextReg, {0x1b3, regs[6], regs[7]});
-    cmd = SetRegisters(cmd, OpSetContextReg, {{0x1b6, regs[8]}, {0x1b8, regs[9]}, {0x203, regs[10]}, {0x8f, regs[11]}});
+    const auto* const shaderRegs = regs;
+    if (shaderRegs[1] != 0) return -1;
+    cmd = Emit(cmd, OpSetShReg, {8, shaderRegs[0], 0});
+    cmd = Emit(cmd, OpSetShReg, {10, shaderRegs[2], shaderRegs[3]});
+    cmd = Emit(cmd, OpSetContextReg, {0x1c4, shaderRegs[4], shaderRegs[5]});
+    cmd = Emit(cmd, OpSetContextReg, {0x1b3, shaderRegs[6], shaderRegs[7]});
+    cmd = SetRegisters(cmd, OpSetContextReg, {{0x1b6, shaderRegs[8]}, {0x1b8, shaderRegs[9]}, {0x203, shaderRegs[10]}, {0x8f, shaderRegs[11]}});
     Nop(cmd, 11);
     return 0;
 }
 
 int APS5_VABI sceGnmSetVsShader(std::uint32_t* cmd, std::uint32_t size, const std::uint32_t* regs, std::uint32_t modifier) {
-    if (!cmd || size <= 0x1c || !regs || (modifier & 0xfcfffc3fu) || regs[1] != 0) return -1;
-    const std::uint32_t rsrc1 = modifier == 0 ? regs[2] : (regs[2] & 0xfcfffc3fu) | modifier;
-    cmd = Emit(cmd, OpSetShReg, {0x48, regs[0], 0});
-    cmd = Emit(cmd, OpSetShReg, {0x4a, rsrc1, regs[3]});
-    cmd = SetRegisters(cmd, OpSetContextReg, {{0x207, regs[6]}, {0x1b1, regs[4]}, {0x1c3, regs[5]}});
+    if (!cmd || size <= 0x1c || !regs || (modifier & 0xfcfffc3fu)) return -1;
+    const auto* const shaderRegs = regs;
+    if (shaderRegs[1] != 0) return -1;
+    const std::uint32_t rsrc1 = modifier == 0 ? shaderRegs[2] : (shaderRegs[2] & 0xfcfffc3fu) | modifier;
+    cmd = Emit(cmd, OpSetShReg, {0x48, shaderRegs[0], 0});
+    cmd = Emit(cmd, OpSetShReg, {0x4a, rsrc1, shaderRegs[3]});
+    cmd = SetRegisters(cmd, OpSetContextReg, {{0x207, shaderRegs[6]}, {0x1b1, shaderRegs[4]}, {0x1c3, shaderRegs[5]}});
     Nop(cmd, 11);
     return 0;
 }
 
 int APS5_VABI sceGnmSetCsShader(std::uint32_t* cmd, std::uint32_t size, const std::uint32_t* regs) {
-    if (!cmd || size <= 0x18 || !regs || regs[1] != 0) return -1;
-    cmd = Emit(cmd, OpSetShReg, {0x20c, regs[0], 0});
-    cmd = Emit(cmd, OpSetShReg, {0x212, regs[2], regs[3]});
-    cmd = Emit(cmd, OpSetShReg, {0x207, regs[4], regs[5], regs[6]});
+    if (!cmd || size <= 0x18 || !regs) return -1;
+    const auto* const shaderRegs = regs;
+    if (shaderRegs[1] != 0) return -1;
+    cmd = Emit(cmd, OpSetShReg, {0x20c, shaderRegs[0], 0});
+    cmd = Emit(cmd, OpSetShReg, {0x212, shaderRegs[2], shaderRegs[3]});
+    cmd = Emit(cmd, OpSetShReg, {0x207, shaderRegs[4], shaderRegs[5], shaderRegs[6]});
     Nop(cmd, 11);
     return 0;
 }
 
 int APS5_VABI sceGnmSetEsShader(std::uint32_t* cmd, std::uint32_t size, const std::uint32_t* regs, std::uint32_t modifier) {
-    if (!cmd || size < 0x14 || !regs || (modifier & 0xfcfffc3fu) || regs[1] != 0) return -1;
-    const std::uint32_t rsrc1 = modifier == 0 ? regs[2] : (regs[2] & 0xfcfffc3fu) | modifier;
-    cmd = Emit(cmd, OpSetShReg, {0xc8, regs[0], 0});
-    cmd = Emit(cmd, OpSetShReg, {0xca, rsrc1, regs[3]});
+    if (!cmd || size < 0x14 || !regs || (modifier & 0xfcfffc3fu)) return -1;
+    const auto* const shaderRegs = regs;
+    if (shaderRegs[1] != 0) return -1;
+    const std::uint32_t rsrc1 = modifier == 0 ? shaderRegs[2] : (shaderRegs[2] & 0xfcfffc3fu) | modifier;
+    cmd = Emit(cmd, OpSetShReg, {0xc8, shaderRegs[0], 0});
+    cmd = Emit(cmd, OpSetShReg, {0xca, rsrc1, shaderRegs[3]});
     Nop(cmd, 11);
     return 0;
 }
 
 int APS5_VABI sceGnmSetGsShader(std::uint32_t* cmd, std::uint32_t size, const std::uint32_t* regs) {
-    if (!cmd || size < 0x1d || !regs || regs[1] != 0) return -1;
-    cmd = Emit(cmd, OpSetShReg, {0x88, regs[0], 0});
-    cmd = Emit(cmd, OpSetShReg, {0x8a, regs[2], regs[3]});
-    cmd = SetRegisters(cmd, OpSetContextReg, {{0x2e5, regs[4]}, {0x29b, regs[5]}, {0x2e4, regs[6]}});
+    if (!cmd || size < 0x1d || !regs) return -1;
+    const auto* const shaderRegs = regs;
+    if (shaderRegs[1] != 0) return -1;
+    cmd = Emit(cmd, OpSetShReg, {0x88, shaderRegs[0], 0});
+    cmd = Emit(cmd, OpSetShReg, {0x8a, shaderRegs[2], shaderRegs[3]});
+    cmd = SetRegisters(cmd, OpSetContextReg, {{0x2e5, shaderRegs[4]}, {0x29b, shaderRegs[5]}, {0x2e4, shaderRegs[6]}});
     Nop(cmd, 11);
     return 0;
 }
 
 int APS5_VABI sceGnmSetHsShader(std::uint32_t* cmd, std::uint32_t size, const std::uint32_t* regs, std::uint32_t lsHsConfig) {
-    if (!cmd || size < 0x1e || !regs || regs[1] != 0) return -1;
-    cmd = Emit(cmd, OpSetShReg, {0x108, regs[0], 0});
-    cmd = Emit(cmd, OpSetShReg, {0x10a, regs[2], regs[3]});
-    cmd = Emit(cmd, OpSetContextReg, {0x286, regs[5], regs[6]});
-    cmd = SetRegisters(cmd, OpSetContextReg, {{0x2db, regs[4]}, {0x2d6, lsHsConfig}});
+    if (!cmd || size < 0x1e || !regs) return -1;
+    const auto* const shaderRegs = regs;
+    if (shaderRegs[1] != 0) return -1;
+    cmd = Emit(cmd, OpSetShReg, {0x108, shaderRegs[0], 0});
+    cmd = Emit(cmd, OpSetShReg, {0x10a, shaderRegs[2], shaderRegs[3]});
+    cmd = Emit(cmd, OpSetContextReg, {0x286, shaderRegs[5], shaderRegs[6]});
+    cmd = SetRegisters(cmd, OpSetContextReg, {{0x2db, shaderRegs[4]}, {0x2d6, lsHsConfig}});
     Nop(cmd, 11);
     return 0;
 }
 
 int APS5_VABI sceGnmSetLsShader(std::uint32_t* cmd, std::uint32_t size, const std::uint32_t* regs, std::uint32_t modifier) {
     if (!cmd || size < 0x17 || !regs) return -1;
+    const auto* const shaderRegs = regs;
     const std::uint32_t mask = (modifier & 0xfffffc3fu) == 0 ? 0xfffffc3fu : 0xfcfffc3fu;
-    if ((modifier & mask) || regs[1] != 0) return -1;
-    const std::uint32_t rsrc1 = modifier == 0 ? regs[2] : (regs[2] & mask) | modifier;
-    cmd = Emit(cmd, OpSetShReg, {0x148, regs[0], 0});
-    cmd = Emit(cmd, OpSetShReg, {0x14b, regs[3]});
-    cmd = Emit(cmd, OpSetShReg, {0x14a, rsrc1, regs[3]});
+    if ((modifier & mask) || shaderRegs[1] != 0) return -1;
+    const std::uint32_t rsrc1 = modifier == 0 ? shaderRegs[2] : (shaderRegs[2] & mask) | modifier;
+    cmd = Emit(cmd, OpSetShReg, {0x148, shaderRegs[0], 0});
+    cmd = Emit(cmd, OpSetShReg, {0x14b, shaderRegs[3]});
+    cmd = Emit(cmd, OpSetShReg, {0x14a, rsrc1, shaderRegs[3]});
     Nop(cmd, 11);
     return 0;
 }
@@ -526,29 +538,32 @@ std::uint32_t APS5_VABI sceGnmDrawInitDefaultHardwareState175(std::uint32_t* cmd
 
 std::uint32_t APS5_VABI sceGnmDrawInitDefaultHardwareState200_nid_disambig1(std::uint32_t* cmd, std::uint32_t size) {
     if (size < HwInitPacketWords) return 0;
+    auto* const out = cmd;
     const bool neo = sceKernelIsNeoMode() != 0;
-    auto* at = std::copy(GnmNeo::ClearState.begin(), GnmNeo::ClearState.end(), cmd);
+    auto* at = std::copy(GnmNeo::ClearState.begin(), GnmNeo::ClearState.end(), out);
     if (neo) at = std::copy(GnmNeo::HardwareState200.begin(), GnmNeo::HardwareState200.end(), at);
     else at = std::copy(BaseHardwareState200.begin(), BaseHardwareState200.end(), at);
-    Nop(at, static_cast<std::uint32_t>(cmd + HwInitPacketWords - at) - 1);
+    Nop(at, static_cast<std::uint32_t>(out + HwInitPacketWords - at) - 1);
     return HwInitPacketWords;
 }
 
 std::uint32_t APS5_VABI sceGnmDrawInitDefaultHardwareState350_nid_disambig1(std::uint32_t* cmd, std::uint32_t size) {
     if (!cmd) return static_cast<std::uint32_t>(-1);
     if (size < HwInitPacketWords) return 0;
-    auto* at = std::copy(GnmNeo::ClearState.begin(), GnmNeo::ClearState.end(), cmd);
+    auto* const out = cmd;
+    auto* at = std::copy(GnmNeo::ClearState.begin(), GnmNeo::ClearState.end(), out);
     if (sceKernelIsNeoMode()) at = std::copy(GnmNeo::HardwareState350.begin(), GnmNeo::HardwareState350.end(), at);
     else at = std::copy(BaseHardwareState350.begin(), BaseHardwareState350.end(), at);
-    Nop(at, static_cast<std::uint32_t>(cmd + HwInitPacketWords - at) - 1);
+    Nop(at, static_cast<std::uint32_t>(out + HwInitPacketWords - at) - 1);
     return HwInitPacketWords;
 }
 
 std::uint32_t APS5_VABI sceGnmDrawInitToDefaultContextState400_nid_disambig1(std::uint32_t* cmd, std::uint32_t size) {
     if (!cmd) return static_cast<std::uint32_t>(-1);
     if (size != HwInitPacketWords) return 0;
-    if (sceKernelIsNeoMode()) std::copy(GnmNeo::ContextState400.begin(), GnmNeo::ContextState400.end(), cmd);
-    else std::copy(BaseContextState400.begin(), BaseContextState400.end(), cmd);
+    auto* const out = cmd;
+    if (sceKernelIsNeoMode()) std::copy(GnmNeo::ContextState400.begin(), GnmNeo::ContextState400.end(), out);
+    else std::copy(BaseContextState400.begin(), BaseContextState400.end(), out);
     return HwInitPacketWords;
 }
 
@@ -640,9 +655,11 @@ int APS5_VABI sceGnmSubmitAndFlipCommandBuffers(std::uint32_t count, std::uint32
     std::uint32_t handle, std::uint32_t index, std::uint32_t flipMode, std::int64_t flipArg) {
     if (count == 0) return GNM_ERROR_SUBMISSION_FAILED_INVALID_ARGUMENT;
     if (const int error = CheckSubmission(count, dcbs, dcbBytes, ccbs, ccbBytes)) return error;
-    if (dcbBytes[count - 1] < FlipReserveWords * 4) throw std::runtime_error("GnmDriver: the last command buffer has no room for a flip reservation");
+    auto* const* const submissionDcbs = dcbs;
+    const auto* const submissionDcbBytes = dcbBytes;
+    if (submissionDcbBytes[count - 1] < FlipReserveWords * 4) throw std::runtime_error("GnmDriver: the last command buffer has no room for a flip reservation");
     std::lock_guard lock(g_submitMutex);
-    PatchFlip(dcbs[count - 1] + dcbBytes[count - 1] / 4 - FlipReserveWords, handle, index, flipMode, flipArg);
+    PatchFlip(submissionDcbs[count - 1] + submissionDcbBytes[count - 1] / 4 - FlipReserveWords, handle, index, flipMode, flipArg);
     SubmitLocked(count, dcbs, dcbBytes, ccbs, ccbBytes);
     return 0;
 }
