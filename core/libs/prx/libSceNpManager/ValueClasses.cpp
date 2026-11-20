@@ -78,9 +78,10 @@ void* const NpAccessTokenVtable[] = {
 extern "C" {
 
 void APS5_VABI _ZN3sce2np10NpOnlineIdC1Ev(NpOnlineIdObject* self) {
-    self->vtable = &NpOnlineIdVtable[2];
-    std::memset(self->data, 0, sizeof(self->data));
-    self->term = 0;
+    auto* const s = self;
+    s->vtable = &NpOnlineIdVtable[2];
+    std::memset(s->data, 0, sizeof(s->data));
+    s->term = 0;
 }
 
 void APS5_VABI _ZN3sce2np10NpOnlineIdC2Ev(NpOnlineIdObject* self) {
@@ -88,9 +89,11 @@ void APS5_VABI _ZN3sce2np10NpOnlineIdC2Ev(NpOnlineIdObject* self) {
 }
 
 void APS5_VABI _ZN3sce2np10NpOnlineIdC1ERKS1_(NpOnlineIdObject* self, const NpOnlineIdObject* other) {
-    self->vtable = &NpOnlineIdVtable[2];
-    std::memcpy(self->data, other->data, sizeof(self->data));
-    self->term = other->term;
+    auto* const s = self;
+    const auto* const o = other;
+    s->vtable = &NpOnlineIdVtable[2];
+    std::memcpy(s->data, o->data, sizeof(s->data));
+    s->term = o->term;
 }
 
 void APS5_VABI _ZN3sce2np10NpOnlineIdC2ERKS1_(NpOnlineIdObject* self, const NpOnlineIdObject* other) {
@@ -98,9 +101,11 @@ void APS5_VABI _ZN3sce2np10NpOnlineIdC2ERKS1_(NpOnlineIdObject* self, const NpOn
 }
 
 void APS5_VABI _ZN3sce2np10NpOnlineIdC1ERK13SceNpOnlineId(NpOnlineIdObject* self, const SceNpOnlineId* source) {
-    self->vtable = &NpOnlineIdVtable[2];
-    std::memcpy(self->data, source->data, sizeof(self->data));
-    self->term = source->term;
+    auto* const s = self;
+    const auto* const src = source;
+    s->vtable = &NpOnlineIdVtable[2];
+    std::memcpy(s->data, src->data, sizeof(s->data));
+    s->term = src->term;
 }
 
 void APS5_VABI _ZN3sce2np10NpOnlineIdC2ERK13SceNpOnlineId(NpOnlineIdObject* self, const SceNpOnlineId* source) {
@@ -108,8 +113,9 @@ void APS5_VABI _ZN3sce2np10NpOnlineIdC2ERK13SceNpOnlineId(NpOnlineIdObject* self
 }
 
 void APS5_VABI _ZN3sce2np10NpOnlineId5ClearEv(NpOnlineIdObject* self) {
-    std::memset(self->data, 0, sizeof(self->data));
-    self->term = 0;
+    auto* const s = self;
+    std::memset(s->data, 0, sizeof(s->data));
+    s->term = 0;
 }
 
 int APS5_VABI _ZN3sce2np10NpOnlineId16SetNpOnlineIdStrEPKc(NpOnlineIdObject* self, const char* text) {
@@ -118,14 +124,16 @@ int APS5_VABI _ZN3sce2np10NpOnlineId16SetNpOnlineIdStrEPKc(NpOnlineIdObject* sel
     const int error = CopyGuestString_nid_no_patch(text, NP_ONLINE_ID_SIZE + 1, copy);
     if (error == 63) return NP_ERROR_ONLINE_ID_TOO_LONG;
     if (error != 0) return NP_ERROR_INVALID_ARGUMENT;
-    std::memset(self->data, 0, sizeof(self->data));
-    self->term = 0;
-    std::memcpy(self->data, copy.data(), copy.size());
+    auto* const s = self;
+    std::memset(s->data, 0, sizeof(s->data));
+    s->term = 0;
+    std::memcpy(s->data, copy.data(), copy.size());
     return 0;
 }
 
 bool APS5_VABI _ZNK3sce2np10NpOnlineId7IsEmptyEv(const NpOnlineIdObject* self) {
-    return self->data[0] == '\0';
+    const auto* const s = self;
+    return s->data[0] == '\0';
 }
 
 int APS5_VABI _ZN3sce2np10NpOnlineId13GetNpOnlineIdERKNS0_4UserEP13SceNpOnlineId(const UserObject* user, SceNpOnlineId* out) {
@@ -147,32 +155,45 @@ int APS5_VABI _ZN3sce2np10NpOnlineId13GetNpOnlineIdERKNS0_4UserEPS1_(const UserO
 }
 
 bool APS5_VABI _ZN3sce2npeqERKNS0_10NpOnlineIdES3_(const NpOnlineIdObject* lhs, const NpOnlineIdObject* rhs) {
-    return SameOnlineId(lhs->data, rhs->data);
+    const auto* const l = lhs;
+    const auto* const r = rhs;
+    return SameOnlineId(l->data, r->data);
 }
 
 bool APS5_VABI _ZN3sce2npeqERK13SceNpOnlineIdRKNS0_10NpOnlineIdE(const SceNpOnlineId* lhs, const NpOnlineIdObject* rhs) {
-    return SameOnlineId(lhs->data, rhs->data);
+    const auto* const l = lhs;
+    const auto* const r = rhs;
+    return SameOnlineId(l->data, r->data);
 }
 
 bool APS5_VABI _ZN3sce2npeqERKNS0_10NpOnlineIdERK13SceNpOnlineId(const NpOnlineIdObject* lhs, const SceNpOnlineId* rhs) {
-    return SameOnlineId(lhs->data, rhs->data);
+    const auto* const l = lhs;
+    const auto* const r = rhs;
+    return SameOnlineId(l->data, r->data);
 }
 
 bool APS5_VABI _ZN3sce2npneERKNS0_10NpOnlineIdES3_(const NpOnlineIdObject* lhs, const NpOnlineIdObject* rhs) {
-    return !SameOnlineId(lhs->data, rhs->data);
+    const auto* const l = lhs;
+    const auto* const r = rhs;
+    return !SameOnlineId(l->data, r->data);
 }
 
 bool APS5_VABI _ZN3sce2npneERK13SceNpOnlineIdRKNS0_10NpOnlineIdE(const SceNpOnlineId* lhs, const NpOnlineIdObject* rhs) {
-    return !SameOnlineId(lhs->data, rhs->data);
+    const auto* const l = lhs;
+    const auto* const r = rhs;
+    return !SameOnlineId(l->data, r->data);
 }
 
 bool APS5_VABI _ZN3sce2npneERKNS0_10NpOnlineIdERK13SceNpOnlineId(const NpOnlineIdObject* lhs, const SceNpOnlineId* rhs) {
-    return !SameOnlineId(lhs->data, rhs->data);
+    const auto* const l = lhs;
+    const auto* const r = rhs;
+    return !SameOnlineId(l->data, r->data);
 }
 
 void APS5_VABI _ZN3sce2np4NpIdC1Ev(NpIdObject* self) {
-    self->vtable = &NpIdVtable[2];
-    std::memset(&self->id, 0, sizeof(self->id));
+    auto* const s = self;
+    s->vtable = &NpIdVtable[2];
+    std::memset(&s->id, 0, sizeof(s->id));
 }
 
 void APS5_VABI _ZN3sce2np4NpIdC2Ev(NpIdObject* self) {
@@ -180,8 +201,10 @@ void APS5_VABI _ZN3sce2np4NpIdC2Ev(NpIdObject* self) {
 }
 
 void APS5_VABI _ZN3sce2np4NpIdC1ERKS1_(NpIdObject* self, const NpIdObject* other) {
-    self->vtable = &NpIdVtable[2];
-    std::memcpy(&self->id, &other->id, sizeof(self->id));
+    auto* const s = self;
+    const auto* const o = other;
+    s->vtable = &NpIdVtable[2];
+    std::memcpy(&s->id, &o->id, sizeof(s->id));
 }
 
 void APS5_VABI _ZN3sce2np4NpIdC2ERKS1_(NpIdObject* self, const NpIdObject* other) {
@@ -189,8 +212,10 @@ void APS5_VABI _ZN3sce2np4NpIdC2ERKS1_(NpIdObject* self, const NpIdObject* other
 }
 
 void APS5_VABI _ZN3sce2np4NpIdC1ERK7SceNpId(NpIdObject* self, const SceNpId* source) {
-    self->vtable = &NpIdVtable[2];
-    std::memcpy(&self->id, source, sizeof(self->id));
+    auto* const s = self;
+    const auto* const src = source;
+    s->vtable = &NpIdVtable[2];
+    std::memcpy(&s->id, src, sizeof(s->id));
 }
 
 void APS5_VABI _ZN3sce2np4NpIdC2ERK7SceNpId(NpIdObject* self, const SceNpId* source) {
@@ -198,12 +223,14 @@ void APS5_VABI _ZN3sce2np4NpIdC2ERK7SceNpId(NpIdObject* self, const SceNpId* sou
 }
 
 void APS5_VABI _ZN3sce2np4NpId5ClearEv(NpIdObject* self) {
-    std::memset(&self->id, 0, sizeof(self->id));
+    auto* const s = self;
+    std::memset(&s->id, 0, sizeof(s->id));
 }
 
 void APS5_VABI _ZN3sce2np4UserC1Ev(UserObject* self) {
-    self->vtable = &UserVtable[2];
-    self->userId = USER_SERVICE_USER_ID_INVALID;
+    auto* const s = self;
+    s->vtable = &UserVtable[2];
+    s->userId = USER_SERVICE_USER_ID_INVALID;
 }
 
 void APS5_VABI _ZN3sce2np4UserC2Ev(UserObject* self) {
@@ -211,8 +238,9 @@ void APS5_VABI _ZN3sce2np4UserC2Ev(UserObject* self) {
 }
 
 void APS5_VABI _ZN3sce2np4UserC1Ei(UserObject* self, int userId) {
-    self->vtable = &UserVtable[2];
-    self->userId = userId;
+    auto* const s = self;
+    s->vtable = &UserVtable[2];
+    s->userId = userId;
 }
 
 void APS5_VABI _ZN3sce2np4UserC2Ei(UserObject* self, int userId) {
@@ -220,8 +248,10 @@ void APS5_VABI _ZN3sce2np4UserC2Ei(UserObject* self, int userId) {
 }
 
 void APS5_VABI _ZN3sce2np4UserC1ERKS1_(UserObject* self, const UserObject* other) {
-    self->vtable = &UserVtable[2];
-    self->userId = other->userId;
+    auto* const s = self;
+    const auto* const o = other;
+    s->vtable = &UserVtable[2];
+    s->userId = o->userId;
 }
 
 void APS5_VABI _ZN3sce2np4UserC2ERKS1_(UserObject* self, const UserObject* other) {
@@ -229,32 +259,38 @@ void APS5_VABI _ZN3sce2np4UserC2ERKS1_(UserObject* self, const UserObject* other
 }
 
 void APS5_VABI _ZN3sce2np4User5ClearEv(UserObject* self) {
-    self->userId = USER_SERVICE_USER_ID_INVALID;
+    auto* const s = self;
+    s->userId = USER_SERVICE_USER_ID_INVALID;
 }
 
 bool APS5_VABI _ZNK3sce2np4User7IsEmptyEv(const UserObject* self) {
-    return self->userId == USER_SERVICE_USER_ID_INVALID;
+    const auto* const s = self;
+    return s->userId == USER_SERVICE_USER_ID_INVALID;
 }
 
 int APS5_VABI _ZNK3sce2np4User9GetUserIdEv(const UserObject* self) {
-    return self->userId;
+    const auto* const s = self;
+    return s->userId;
 }
 
 bool APS5_VABI _ZNK3sce2np4User10IsLoggedInEv(const UserObject* self) {
-    if (self->userId == USER_SERVICE_USER_ID_INVALID) return false;
+    const auto* const s = self;
+    if (s->userId == USER_SERVICE_USER_ID_INVALID) return false;
     std::uint64_t accountId = 0;
-    return sceUserServiceGetNpAccountId(self->userId, &accountId) == 0;
+    return sceUserServiceGetNpAccountId(s->userId, &accountId) == 0;
 }
 
 bool APS5_VABI _ZNK3sce2np4User7IsGuestEv(const UserObject* self) {
-    return sceUserServiceIsGuestUser(self->userId) != 0;
+    const auto* const s = self;
+    return sceUserServiceIsGuestUser(s->userId) != 0;
 }
 
 int APS5_VABI _ZNK3sce2np4User12GetAccountIdEPm(const UserObject* self, std::uint64_t* accountId) {
     if (accountId == nullptr) return NP_ERROR_INVALID_ARGUMENT;
     std::uint64_t value = 0;
     if (!GuestCopyOut_nid_no_patch(accountId, &value, sizeof(value))) return NP_ERROR_INVALID_ARGUMENT;
-    const int result = sceUserServiceGetNpAccountId(self->userId, &value);
+    const auto* const s = self;
+    const int result = sceUserServiceGetNpAccountId(s->userId, &value);
     if (result < 0) return result;
     if (!GuestCopyOut_nid_no_patch(accountId, &value, sizeof(value))) return NP_ERROR_INVALID_ARGUMENT;
     if (value == 0) return NP_ERROR_ACCOUNT_ID_MISSING;
@@ -264,7 +300,8 @@ int APS5_VABI _ZNK3sce2np4User12GetAccountIdEPm(const UserObject* self, std::uin
 int APS5_VABI _ZNK3sce2np4User12HasAccountIdEPb(const UserObject* self, bool* hasAccountId) {
     if (hasAccountId == nullptr) return NP_ERROR_INVALID_ARGUMENT;
     std::uint64_t accountId = 0;
-    const int result = sceUserServiceGetNpAccountId(self->userId, &accountId);
+    const auto* const s = self;
+    const int result = sceUserServiceGetNpAccountId(s->userId, &accountId);
     if (result < 0) return result;
     const bool has = accountId != 0;
     if (!GuestCopyOut_nid_no_patch(hasAccountId, &has, sizeof(has))) return NP_ERROR_INVALID_ARGUMENT;
@@ -272,7 +309,8 @@ int APS5_VABI _ZNK3sce2np4User12HasAccountIdEPb(const UserObject* self, bool* ha
 }
 
 int APS5_VABI _ZNK3sce2np4User25GetAccountIdFromRegistoryEPm(const UserObject* self, std::uint64_t* accountId) {
-    const int result = sceUserServiceGetNpAccountId(self->userId, accountId);
+    const auto* const s = self;
+    const int result = sceUserServiceGetNpAccountId(s->userId, accountId);
     return result < 0 ? result : 0;
 }
 
@@ -285,29 +323,39 @@ int APS5_VABI _ZN3sce2np4User7GetUserEiPS1_(int userId, UserObject* out) {
     if (std::find(std::begin(users.user_id), std::end(users.user_id), userId) == std::end(users.user_id)) {
         return NP_ERROR_USER_INVALID;
     }
-    if (!GuestCopyOut_nid_no_patch(&out->userId, &userId, sizeof(userId))) return NP_ERROR_INVALID_ARGUMENT;
+    auto* const o = out;
+    if (!GuestCopyOut_nid_no_patch(&o->userId, &userId, sizeof(userId))) return NP_ERROR_INVALID_ARGUMENT;
     return 0;
 }
 
 bool APS5_VABI _ZN3sce2npeqERKNS0_4UserES3_(const UserObject* lhs, const UserObject* rhs) {
-    return lhs->userId == rhs->userId;
+    const auto* const l = lhs;
+    const auto* const r = rhs;
+    return l->userId == r->userId;
 }
 
 bool APS5_VABI _ZN3sce2npeqERKNS0_4UserERKi(const UserObject* lhs, const int* rhs) {
-    return lhs->userId == *rhs;
+    const auto* const l = lhs;
+    const auto* const r = rhs;
+    return l->userId == *r;
 }
 
 bool APS5_VABI _ZN3sce2npneERKNS0_4UserES3_(const UserObject* lhs, const UserObject* rhs) {
-    return lhs->userId != rhs->userId;
+    const auto* const l = lhs;
+    const auto* const r = rhs;
+    return l->userId != r->userId;
 }
 
 bool APS5_VABI _ZN3sce2npneERKNS0_4UserERKi(const UserObject* lhs, const int* rhs) {
-    return lhs->userId != *rhs;
+    const auto* const l = lhs;
+    const auto* const r = rhs;
+    return l->userId != *r;
 }
 
 void APS5_VABI _ZN3sce2np12NpTitleTokenC1Ev(NpTitleTokenObject* self) {
-    self->vtable = &NpTitleTokenVtable[2];
-    std::memset(self->data, 0, sizeof(self->data));
+    auto* const s = self;
+    s->vtable = &NpTitleTokenVtable[2];
+    std::memset(s->data, 0, sizeof(s->data));
 }
 
 void APS5_VABI _ZN3sce2np12NpTitleTokenC2Ev(NpTitleTokenObject* self) {
@@ -315,8 +363,10 @@ void APS5_VABI _ZN3sce2np12NpTitleTokenC2Ev(NpTitleTokenObject* self) {
 }
 
 void APS5_VABI _ZN3sce2np12NpTitleTokenC1ERKS1_(NpTitleTokenObject* self, const NpTitleTokenObject* other) {
-    self->vtable = &NpTitleTokenVtable[2];
-    std::memcpy(self->data, other->data, sizeof(self->data));
+    auto* const s = self;
+    const auto* const o = other;
+    s->vtable = &NpTitleTokenVtable[2];
+    std::memcpy(s->data, o->data, sizeof(s->data));
 }
 
 void APS5_VABI _ZN3sce2np12NpTitleTokenC2ERKS1_(NpTitleTokenObject* self, const NpTitleTokenObject* other) {
@@ -324,16 +374,19 @@ void APS5_VABI _ZN3sce2np12NpTitleTokenC2ERKS1_(NpTitleTokenObject* self, const 
 }
 
 void APS5_VABI _ZN3sce2np12NpTitleToken5ClearEv(NpTitleTokenObject* self) {
-    std::memset(self->data, 0, sizeof(self->data));
+    auto* const s = self;
+    std::memset(s->data, 0, sizeof(s->data));
 }
 
 const char* APS5_VABI _ZNK3sce2np12NpTitleToken6GetStrEv(const NpTitleTokenObject* self) {
-    return self->data;
+    const auto* const s = self;
+    return s->data;
 }
 
 void APS5_VABI _ZN3sce2np13NpAccessTokenC1Ev(NpAccessTokenObject* self) {
-    self->vtable = &NpAccessTokenVtable[2];
-    std::memset(self->data, 0, sizeof(self->data));
+    auto* const s = self;
+    s->vtable = &NpAccessTokenVtable[2];
+    std::memset(s->data, 0, sizeof(s->data));
 }
 
 void APS5_VABI _ZN3sce2np13NpAccessTokenC2Ev(NpAccessTokenObject* self) {
@@ -341,8 +394,10 @@ void APS5_VABI _ZN3sce2np13NpAccessTokenC2Ev(NpAccessTokenObject* self) {
 }
 
 void APS5_VABI _ZN3sce2np13NpAccessTokenC1ERKS1_(NpAccessTokenObject* self, const NpAccessTokenObject* other) {
-    self->vtable = &NpAccessTokenVtable[2];
-    std::memcpy(self->data, other->data, sizeof(self->data));
+    auto* const s = self;
+    const auto* const o = other;
+    s->vtable = &NpAccessTokenVtable[2];
+    std::memcpy(s->data, o->data, sizeof(s->data));
 }
 
 void APS5_VABI _ZN3sce2np13NpAccessTokenC2ERKS1_(NpAccessTokenObject* self, const NpAccessTokenObject* other) {
@@ -350,8 +405,10 @@ void APS5_VABI _ZN3sce2np13NpAccessTokenC2ERKS1_(NpAccessTokenObject* self, cons
 }
 
 void APS5_VABI _ZN3sce2np13NpAccessTokenC1ERK16SceNpAccessToken(NpAccessTokenObject* self, const SceNpAccessToken* source) {
-    self->vtable = &NpAccessTokenVtable[2];
-    std::memcpy(self->data, source->data, sizeof(self->data));
+    auto* const s = self;
+    const auto* const src = source;
+    s->vtable = &NpAccessTokenVtable[2];
+    std::memcpy(s->data, src->data, sizeof(s->data));
 }
 
 void APS5_VABI _ZN3sce2np13NpAccessTokenC2ERK16SceNpAccessToken(NpAccessTokenObject* self, const SceNpAccessToken* source) {
@@ -359,21 +416,25 @@ void APS5_VABI _ZN3sce2np13NpAccessTokenC2ERK16SceNpAccessToken(NpAccessTokenObj
 }
 
 void APS5_VABI _ZN3sce2np13NpAccessToken5ClearEv(NpAccessTokenObject* self) {
-    std::memset(self->data, 0, sizeof(self->data));
+    auto* const s = self;
+    std::memset(s->data, 0, sizeof(s->data));
 }
 
 bool APS5_VABI _ZNK3sce2np13NpAccessToken7IsEmptyEv(const NpAccessTokenObject* self) {
-    std::uint8_t empty[sizeof(self->data)] {};
-    return std::memcmp(self->data, empty, sizeof(self->data)) == 0;
+    const auto* const s = self;
+    std::uint8_t empty[sizeof(s->data)] {};
+    return std::memcmp(s->data, empty, sizeof(s->data)) == 0;
 }
 
 void* APS5_VABI _ZNK3sce2np8NpTicket13GetTicketDataEv(const NpTicketObject* self) {
-    if (self->data == nullptr) throw std::runtime_error("NpTicket data is empty");
-    return self->data;
+    const auto* const s = self;
+    if (s->data == nullptr) throw std::runtime_error("NpTicket data is empty");
+    return s->data;
 }
 
 std::size_t APS5_VABI _ZNK3sce2np8NpTicket13GetTicketSizeEv(const NpTicketObject* self) {
-    return self->size;
+    const auto* const s = self;
+    return s->size;
 }
 
 }
