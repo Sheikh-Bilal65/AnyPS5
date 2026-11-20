@@ -41,75 +41,84 @@ int APS5_VABI sceNpUniversalDataSystemDestroyEventPropertyArray(NpUniversalDataS
 int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetString(
     NpUniversalDataSystemEventPropertyArray* array, const char* value)
 {
-    if (array == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
+    auto* const arr = array;
+    if (arr == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
     if (value == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_VALUE;
-    array->Add(std::string(value));
+    arr->Add(std::string(value));
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetInt32(
     NpUniversalDataSystemEventPropertyArray* array, int32_t value)
 {
-    if (array == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
-    array->Add(value);
+    auto* const arr = array;
+    if (arr == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
+    arr->Add(value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetUInt32(
     NpUniversalDataSystemEventPropertyArray* array, uint32_t value)
 {
-    if (array == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
-    array->Add(value);
+    auto* const arr = array;
+    if (arr == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
+    arr->Add(value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetInt64(
     NpUniversalDataSystemEventPropertyArray* array, int64_t value)
 {
-    if (array == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
-    array->Add(value);
+    auto* const arr = array;
+    if (arr == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
+    arr->Add(value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetUInt64(
     NpUniversalDataSystemEventPropertyArray* array, uint64_t value)
 {
-    if (array == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
-    array->Add(value);
+    auto* const arr = array;
+    if (arr == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
+    arr->Add(value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetFloat32(
     NpUniversalDataSystemEventPropertyArray* array, float value)
 {
-    if (array == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
-    array->Add(value);
+    auto* const arr = array;
+    if (arr == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
+    arr->Add(value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetFloat64(
 NpUniversalDataSystemEventPropertyArray* array, double value)
 {
-    if (array == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
-    array->Add(value);
+    auto* const arr = array;
+    if (arr == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
+    arr->Add(value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetBool(
     NpUniversalDataSystemEventPropertyArray* array, bool value)
 {
-    if (array == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
-    array->Add(value);
+    auto* const arr = array;
+    if (arr == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
+    arr->Add(value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetBinary(
     NpUniversalDataSystemEventPropertyArray* array, const void* value, size_t value_size)
 {
-    if (array == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
+    auto* const arr = array;
+    if (arr == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
     if (value == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_VALUE;
     const auto* bytes = static_cast<const std::uint8_t*>(value);
-    array->Add(Uds::Binary(bytes, bytes + value_size));
+    arr->Add(Uds::Binary(bytes, bytes + value_size));
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
@@ -118,8 +127,10 @@ int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetObject(
     const NpUniversalDataSystemEventPropertyObject* value,
     NpUniversalDataSystemEventPropertyObject** value_ptr)
 {
-    if (array == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
-    auto child = std::make_shared<NpUniversalDataSystemEventPropertyObject>(value != nullptr ? value->Clone() : NpUniversalDataSystemEventPropertyObject{});
+    auto* const arr = array;
+    const auto* const val = value;
+    if (arr == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
+    auto child = std::make_shared<NpUniversalDataSystemEventPropertyObject>(val != nullptr ? val->Clone() : NpUniversalDataSystemEventPropertyObject{});
     if (value_ptr != nullptr) {
         auto* pointer = child.get();
         const int savedErrno = errno;
@@ -127,7 +138,7 @@ int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetObject(
         errno = savedErrno;
         if (!copied) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_INVALID_ARGUMENT;
     }
-    array->Add(std::move(child));
+    arr->Add(std::move(child));
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
@@ -136,8 +147,10 @@ int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetArray(
     const NpUniversalDataSystemEventPropertyArray* value,
     NpUniversalDataSystemEventPropertyArray** value_ptr)
 {
-    if (array == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
-    auto child = std::make_shared<NpUniversalDataSystemEventPropertyArray>(value != nullptr ? value->Clone() : NpUniversalDataSystemEventPropertyArray{});
+    auto* const arr = array;
+    const auto* const val = value;
+    if (arr == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_ARRAY;
+    auto child = std::make_shared<NpUniversalDataSystemEventPropertyArray>(val != nullptr ? val->Clone() : NpUniversalDataSystemEventPropertyArray{});
     if (value_ptr != nullptr) {
         auto* pointer = child.get();
         const int savedErrno = errno;
@@ -145,7 +158,7 @@ int APS5_VABI sceNpUniversalDataSystemEventPropertyArraySetArray(
         errno = savedErrno;
         if (!copied) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_INVALID_ARGUMENT;
     }
-    array->Add(std::move(child));
+    arr->Add(std::move(child));
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 

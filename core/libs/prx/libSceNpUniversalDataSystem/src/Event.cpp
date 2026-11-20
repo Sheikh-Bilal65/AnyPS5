@@ -62,7 +62,8 @@ int APS5_VABI sceNpUniversalDataSystemCreateEvent(
     if (new_event == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_INVALID_ARGUMENT;
     auto event = std::make_unique<NpUniversalDataSystemEvent>();
     event->name = std::move(name);
-    if (prop != nullptr) event->properties = prop->Clone();
+    const auto* const p = prop;
+    if (p != nullptr) event->properties = p->Clone();
     auto* created = events().Adopt(std::move(event));
     int savedErrno = errno;
     bool copied = GuestCopyOut_nid_no_patch(new_event, &created, sizeof(created));
@@ -102,9 +103,10 @@ int APS5_VABI sceNpUniversalDataSystemPostEvent(int context, int handle, const v
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventEstimateSize(const NpUniversalDataSystemEvent* event, size_t* size) {
-    if (event == nullptr || !events().Contains(event)) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_EVENT;
+    const auto* const ev = event;
+    if (ev == nullptr || !events().Contains(ev)) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_EVENT;
     if (size == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_INVALID_ARGUMENT;
-    const size_t value = Uds::MessagePackSize(*event);
+    const size_t value = Uds::MessagePackSize(*ev);
     const int savedErrno = errno;
     const bool copied = GuestCopyOut_nid_no_patch(size, &value, sizeof(value));
     errno = savedErrno;
@@ -118,12 +120,13 @@ int APS5_VABI sceNpUniversalDataSystemEventToString(
     size_t buf_size,
     size_t* string_size)
 {
-    if (event == nullptr || !events().Contains(event)) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_EVENT;
+    const auto* const ev = event;
+    if (ev == nullptr || !events().Contains(ev)) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_EVENT;
     if (buf == nullptr) {
         if (string_size == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_INVALID_ARGUMENT;
         buf_size = 0;
     }
-    const std::string text = Uds::DebugString(*event);
+    const std::string text = Uds::DebugString(*ev);
     if (buf_size != 0) {
         const size_t copied = std::min(text.size(), buf_size - 1);
         std::string truncated(text, 0, copied);

@@ -47,75 +47,84 @@ int APS5_VABI sceNpUniversalDataSystemDestroyEventPropertyObject(NpUniversalData
 int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetString(
     NpUniversalDataSystemEventPropertyObject* object, const char* key, const char* value)
 {
-    if (const int error = checkTarget(object, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
+    auto* const obj = object;
+    if (const int error = checkTarget(obj, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
     if (value == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_VALUE;
-    object->Set(key, std::string(value));
+    obj->Set(key, std::string(value));
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetInt32(
     NpUniversalDataSystemEventPropertyObject* object, const char* key, int32_t value)
 {
-    if (const int error = checkTarget(object, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
-    object->Set(key, value);
+    auto* const obj = object;
+    if (const int error = checkTarget(obj, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
+    obj->Set(key, value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetUInt32(
     NpUniversalDataSystemEventPropertyObject* object, const char* key, uint32_t value)
 {
-    if (const int error = checkTarget(object, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
-    object->Set(key, value);
+    auto* const obj = object;
+    if (const int error = checkTarget(obj, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
+    obj->Set(key, value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetInt64(
     NpUniversalDataSystemEventPropertyObject* object, const char* key, int64_t value)
 {
-    if (const int error = checkTarget(object, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
-    object->Set(key, value);
+    auto* const obj = object;
+    if (const int error = checkTarget(obj, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
+    obj->Set(key, value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetUInt64(
     NpUniversalDataSystemEventPropertyObject* object, const char* key, uint64_t value)
 {
-    if (const int error = checkTarget(object, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
-    object->Set(key, value);
+    auto* const obj = object;
+    if (const int error = checkTarget(obj, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
+    obj->Set(key, value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetFloat32(
     NpUniversalDataSystemEventPropertyObject* object, const char* key, float value)
 {
-    if (const int error = checkTarget(object, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
-    object->Set(key, value);
+    auto* const obj = object;
+    if (const int error = checkTarget(obj, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
+    obj->Set(key, value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetFloat64(
     NpUniversalDataSystemEventPropertyObject* object, const char* key, double value)
 {
-    if (const int error = checkTarget(object, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
-    object->Set(key, value);
+    auto* const obj = object;
+    if (const int error = checkTarget(obj, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
+    obj->Set(key, value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetBool(
     NpUniversalDataSystemEventPropertyObject* object, const char* key, bool value)
 {
-    if (const int error = checkTarget(object, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
-    object->Set(key, value);
+    auto* const obj = object;
+    if (const int error = checkTarget(obj, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
+    obj->Set(key, value);
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
 int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetBinary(
     NpUniversalDataSystemEventPropertyObject* object, const char* key, const void* value, size_t value_size)
 {
-    if (const int error = checkTarget(object, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
+    auto* const obj = object;
+    if (const int error = checkTarget(obj, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
     if (value == nullptr) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_NULL_VALUE;
     const auto* bytes = static_cast<const std::uint8_t*>(value);
-    object->Set(key, Uds::Binary(bytes, bytes + value_size));
+    obj->Set(key, Uds::Binary(bytes, bytes + value_size));
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
@@ -125,8 +134,10 @@ int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetObject(
     const NpUniversalDataSystemEventPropertyObject* value,
     NpUniversalDataSystemEventPropertyObject** value_ptr)
 {
-    if (const int error = checkTarget(object, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
-    auto child = std::make_shared<NpUniversalDataSystemEventPropertyObject>(value != nullptr ? value->Clone() : NpUniversalDataSystemEventPropertyObject{});
+    auto* const obj = object;
+    const auto* const val = value;
+    if (const int error = checkTarget(obj, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
+    auto child = std::make_shared<NpUniversalDataSystemEventPropertyObject>(val != nullptr ? val->Clone() : NpUniversalDataSystemEventPropertyObject{});
     if (value_ptr != nullptr) {
         auto* pointer = child.get();
         const int savedErrno = errno;
@@ -134,7 +145,7 @@ int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetObject(
         errno = savedErrno;
         if (!copied) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_INVALID_ARGUMENT;
     }
-    object->Set(key, std::move(child));
+    obj->Set(key, std::move(child));
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
@@ -144,8 +155,10 @@ int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetArray(
     const NpUniversalDataSystemEventPropertyArray* value,
     NpUniversalDataSystemEventPropertyArray** value_ptr)
 {
-    if (const int error = checkTarget(object, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
-    auto child = std::make_shared<NpUniversalDataSystemEventPropertyArray>(value != nullptr ? value->Clone() : NpUniversalDataSystemEventPropertyArray{});
+    auto* const obj = object;
+    const auto* const val = value;
+    if (const int error = checkTarget(obj, key); error != SCE_NP_UNIVERSAL_DATA_SYSTEM_OK) return error;
+    auto child = std::make_shared<NpUniversalDataSystemEventPropertyArray>(val != nullptr ? val->Clone() : NpUniversalDataSystemEventPropertyArray{});
     if (value_ptr != nullptr) {
         auto* pointer = child.get();
         const int savedErrno = errno;
@@ -153,7 +166,7 @@ int APS5_VABI sceNpUniversalDataSystemEventPropertyObjectSetArray(
         errno = savedErrno;
         if (!copied) return SCE_NP_UNIVERSAL_DATA_SYSTEM_ERROR_INVALID_ARGUMENT;
     }
-    object->Set(key, std::move(child));
+    obj->Set(key, std::move(child));
     return SCE_NP_UNIVERSAL_DATA_SYSTEM_OK;
 }
 
