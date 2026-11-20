@@ -205,8 +205,10 @@ MediaTime::ComparisonFlags Compare(const MediaTime& lhs, const MediaTime& rhs) {
 extern "C" {
 
 bool APS5_VABI _ZNK3WTF9MediaTimeneERKS0_(const MediaTime* self, const MediaTime* rhs) {
-    if (!self || !rhs) throw std::invalid_argument("WTF::MediaTime::operator!=: null object");
-    return Compare(*self, *rhs) != MediaTime::EqualTo;
+    const auto* const s = self;
+    const auto* const r = rhs;
+    if (!s || !r) throw std::invalid_argument("WTF::MediaTime::operator!=: null object");
+    return Compare(*s, *r) != MediaTime::EqualTo;
 }
 
 }

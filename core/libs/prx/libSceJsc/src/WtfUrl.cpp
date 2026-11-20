@@ -294,25 +294,30 @@ OptionalUInt16 APS5_VABI _ZN3WTF22defaultPortForProtocolENS_10StringViewE(String
 }
 
 bool APS5_VABI _ZNK3WTF24TimeWithDynamicClockTypeltERKS0_(const TimeWithDynamicClockType* self, const TimeWithDynamicClockType* other) {
-    if (!self || !other) throw std::invalid_argument(__func__);
-    if (self->type != other->type) throw std::invalid_argument("WTF::TimeWithDynamicClockType::operator<: clock types differ");
-    return self->value < other->value;
+    const auto* const s = self;
+    const auto* const o = other;
+    if (!s || !o) throw std::invalid_argument(__func__);
+    if (s->type != o->type) throw std::invalid_argument("WTF::TimeWithDynamicClockType::operator<: clock types differ");
+    return s->value < o->value;
 }
 
 TimeWithDynamicClockType APS5_VABI _ZNK3WTF7SecondsplERKNS_24TimeWithDynamicClockTypeE(const Seconds* self, const TimeWithDynamicClockType* other) {
-    if (!self || !other) throw std::invalid_argument(__func__);
-    return {other->value + self->value, other->type};
+    const auto* const s = self;
+    const auto* const o = other;
+    if (!s || !o) throw std::invalid_argument(__func__);
+    return {o->value + s->value, o->type};
 }
 
 bool APS5_VABI _ZNK3WTF13StringBuilder10isAllASCIIEv(const StringBuilder* self) {
-    if (!self) throw std::invalid_argument(__func__);
-    if (self->overflowed) throw std::invalid_argument("WTF::StringBuilder::isAllASCII: the builder has overflowed");
-    if (self->length < 0) throw std::invalid_argument("WTF::StringBuilder::isAllASCII: negative length");
-    const auto length = static_cast<unsigned>(self->length);
+    const auto* const s = self;
+    if (!s) throw std::invalid_argument(__func__);
+    if (s->overflowed) throw std::invalid_argument("WTF::StringBuilder::isAllASCII: the builder has overflowed");
+    if (s->length < 0) throw std::invalid_argument("WTF::StringBuilder::isAllASCII: negative length");
+    const auto length = static_cast<unsigned>(s->length);
     if (!length) return true;
-    const StringImpl* characters = self->string ? self->string : self->buffer;
+    const StringImpl* characters = s->string ? s->string : s->buffer;
     if (!characters) throw std::invalid_argument("WTF::StringBuilder::isAllASCII: no string or buffer");
-    return CharactersAreAllASCII({characters->data, length, self->is8Bit});
+    return CharactersAreAllASCII({characters->data, length, s->is8Bit});
 }
 
 }

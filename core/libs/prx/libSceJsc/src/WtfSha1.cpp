@@ -221,51 +221,56 @@ void EnsureEncoderCapacity(PersistenceEncoder& encoder, std::size_t additional) 
 extern "C" {
 
 void APS5_VABI _ZN3WTF4SHA111computeHashERSt5arrayIhLm20EE(SHA1* self, Jsc::WtfAbi::SHA1Digest* digest) {
-    if (!self || !digest) throw std::invalid_argument("WTF::SHA1::computeHash requires an object and a digest");
-    if (self->cursor >= BlockSize) throw std::invalid_argument("WTF::SHA1::computeHash: buffer cursor out of range");
-    Finalize(*self);
+    auto* const s = self;
+    auto* const dig = digest;
+    if (!s || !dig) throw std::invalid_argument("WTF::SHA1::computeHash requires an object and a digest");
+    if (s->cursor >= BlockSize) throw std::invalid_argument("WTF::SHA1::computeHash: buffer cursor out of range");
+    Finalize(*s);
 
     for (std::size_t i = 0; i < 5; ++i) {
-        std::uint32_t hashValue = self->hash[i];
+        std::uint32_t hashValue = s->hash[i];
         for (int j = 0; j < 4; ++j) {
-            (*digest)[4 * i + (3 - j)] = hashValue & 0xFF;
+            (*dig)[4 * i + (3 - j)] = hashValue & 0xFF;
             hashValue >>= 8;
         }
     }
 
-    Reset(*self);
+    Reset(*s);
 }
 
 Jsc::WtfAbi::OptionalSHA1Digest APS5_VABI _ZN3WTF11Persistence5CoderISt5arrayIhLm20EEE6decodeERNS0_7DecoderE(Jsc::WtfAbi::PersistenceDecoder* decoder) {
-    if (!decoder) throw std::invalid_argument("WTF::Persistence::Coder<SHA1::Digest>::decode requires a decoder");
-    if (decoder->sha1.cursor >= BlockSize) throw std::invalid_argument("WTF::Persistence::Coder<SHA1::Digest>::decode: buffer cursor out of range");
-    if (decoder->bufferPosition > decoder->bufferEnd) throw std::invalid_argument("WTF::Persistence::Coder<SHA1::Digest>::decode: position past the buffer end");
+    auto* const dec = decoder;
+    if (!dec) throw std::invalid_argument("WTF::Persistence::Coder<SHA1::Digest>::decode requires a decoder");
+    if (dec->sha1.cursor >= BlockSize) throw std::invalid_argument("WTF::Persistence::Coder<SHA1::Digest>::decode: buffer cursor out of range");
+    if (dec->bufferPosition > dec->bufferEnd) throw std::invalid_argument("WTF::Persistence::Coder<SHA1::Digest>::decode: position past the buffer end");
     Jsc::WtfAbi::OptionalSHA1Digest result{};
-    if (static_cast<std::size_t>(decoder->bufferEnd - decoder->bufferPosition) < result.value.size()) return result;
-    std::memcpy(result.value.data(), decoder->bufferPosition, result.value.size());
-    decoder->bufferPosition += result.value.size();
+    if (static_cast<std::size_t>(dec->bufferEnd - dec->bufferPosition) < result.value.size()) return result;
+    std::memcpy(result.value.data(), dec->bufferPosition, result.value.size());
+    dec->bufferPosition += result.value.size();
     const unsigned typeSalt = 101;
-    AddBytes(decoder->sha1, reinterpret_cast<const std::uint8_t*>(&typeSalt), sizeof(typeSalt));
-    AddBytes(decoder->sha1, result.value.data(), result.value.size());
+    AddBytes(dec->sha1, reinterpret_cast<const std::uint8_t*>(&typeSalt), sizeof(typeSalt));
+    AddBytes(dec->sha1, result.value.data(), result.value.size());
     result.hasValue = true;
     return result;
 }
 
 void APS5_VABI _ZN3WTF11Persistence5CoderISt5arrayIhLm20EEE6encodeERNS0_7EncoderERKS3_(
     PersistenceEncoder* encoder, const Jsc::WtfAbi::SHA1Digest* digest) {
-    if (!encoder || !digest)
+    auto* const enc = encoder;
+    const auto* const dig = digest;
+    if (!enc || !dig)
         throw std::invalid_argument("WTF::Persistence::Coder<SHA1::Digest>::encode requires an encoder and a digest");
-    if (encoder->sha1.cursor >= BlockSize)
+    if (enc->sha1.cursor >= BlockSize)
         throw std::invalid_argument("WTF::Persistence::Coder<SHA1::Digest>::encode: buffer cursor out of range");
-    if (!encoder->buffer || encoder->size > encoder->capacity)
+    if (!enc->buffer || enc->size > enc->capacity)
         throw std::invalid_argument("WTF::Persistence::Coder<SHA1::Digest>::encode: invalid encoder buffer state");
-    const Jsc::WtfAbi::SHA1Digest value = *digest;
-    EnsureEncoderCapacity(*encoder, value.size());
+    const Jsc::WtfAbi::SHA1Digest value = *dig;
+    EnsureEncoderCapacity(*enc, value.size());
     const unsigned typeSalt = 101;
-    AddBytes(encoder->sha1, reinterpret_cast<const std::uint8_t*>(&typeSalt), sizeof(typeSalt));
-    AddBytes(encoder->sha1, value.data(), value.size());
-    std::memcpy(encoder->buffer + encoder->size, value.data(), value.size());
-    encoder->size += static_cast<unsigned>(value.size());
+    AddBytes(enc->sha1, reinterpret_cast<const std::uint8_t*>(&typeSalt), sizeof(typeSalt));
+    AddBytes(enc->sha1, value.data(), value.size());
+    std::memcpy(enc->buffer + enc->size, value.data(), value.size());
+    enc->size += static_cast<unsigned>(value.size());
 }
 
 void RegisterPersistenceAllocator_nid_no_patch(const PersistenceAllocator* allocator) {

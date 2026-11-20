@@ -87,33 +87,37 @@ bool ConvertUtf8ToUtf16(const char* source, const char* sourceEnd, char16_t** ta
 extern "C" {
 
 bool APS5_VABI _ZN3WTF7Unicode19convertLatin1ToUTF8EPPKhS2_PPcS4_(const unsigned char** sourceStart, const unsigned char* sourceEnd, char** targetStart, char* targetEnd) {
-    RequireCursor(sourceStart, __func__);
-    RequireCursor(targetStart, __func__);
-    RequireRange(*sourceStart, sourceEnd, __func__);
-    RequireRange(*targetStart, targetEnd, __func__);
+    const auto** srcStart = sourceStart;
+    auto** dstStart = targetStart;
+    RequireCursor(srcStart, __func__);
+    RequireCursor(dstStart, __func__);
+    RequireRange(*srcStart, sourceEnd, __func__);
+    RequireRange(*dstStart, targetEnd, __func__);
     const unsigned char* source;
-    char* target = *targetStart;
+    char* target = *dstStart;
     int i = 0;
-    for (source = *sourceStart; source < sourceEnd; ++source) {
+    for (source = *srcStart; source < sourceEnd; ++source) {
         UBool sawError = false;
         UChar32 character = *source;
-        if (character <= 0x7F) RequireRoom(i, targetEnd - *targetStart, __func__);
-        U8_APPEND(reinterpret_cast<std::uint8_t*>(target), i, targetEnd - *targetStart, character, sawError);
+        if (character <= 0x7F) RequireRoom(i, targetEnd - *dstStart, __func__);
+        U8_APPEND(reinterpret_cast<std::uint8_t*>(target), i, targetEnd - *dstStart, character, sawError);
         if (sawError) return false;
     }
-    *sourceStart = source;
-    *targetStart = target + i;
+    *srcStart = source;
+    *dstStart = target + i;
     return true;
 }
 
 ConversionResult APS5_VABI _ZN3WTF7Unicode18convertUTF16ToUTF8EPPKDsS2_PPcS4_b(const char16_t** sourceStart, const char16_t* sourceEnd, char** targetStart, char* targetEnd, bool strict) {
-    RequireCursor(sourceStart, __func__);
-    RequireCursor(targetStart, __func__);
-    RequireRange(*sourceStart, sourceEnd, __func__);
-    RequireRange(*targetStart, targetEnd, __func__);
+    const auto** srcStart = sourceStart;
+    auto** dstStart = targetStart;
+    RequireCursor(srcStart, __func__);
+    RequireCursor(dstStart, __func__);
+    RequireRange(*srcStart, sourceEnd, __func__);
+    RequireRange(*dstStart, targetEnd, __func__);
     auto result = ConversionResult::ConversionOK;
-    const char16_t* source = *sourceStart;
-    char* target = *targetStart;
+    const char16_t* source = *srcStart;
+    char* target = *dstStart;
     UBool sawError = false;
     int i = 0;
     while (source < sourceEnd) {
@@ -139,8 +143,8 @@ ConversionResult APS5_VABI _ZN3WTF7Unicode18convertUTF16ToUTF8EPPKDsS2_PPcS4_b(c
         }
         source += j;
     }
-    *sourceStart = source;
-    *targetStart = target + i;
+    *srcStart = source;
+    *dstStart = target + i;
     return result;
 }
 

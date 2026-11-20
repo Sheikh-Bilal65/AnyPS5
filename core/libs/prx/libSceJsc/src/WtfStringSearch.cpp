@@ -345,6 +345,7 @@ bool APS5_VABI _ZNK3WTF10StringView8containsEPKc(const StringView* self, const c
 
 bool APS5_VABI _ZN3WTF10protocolIsENS_10StringViewEPKc(StringView string, const char* protocol) {
     const Text text = Require(&string, __func__);
+    const char* proto = protocol;
     bool isLeading = true;
     for (unsigned index = 0; index < text.length; ++index) {
         const char16_t codeUnit = text[index];
@@ -352,8 +353,8 @@ bool APS5_VABI _ZN3WTF10protocolIsENS_10StringViewEPKc(StringView string, const 
             if (codeUnit <= ' ') continue;
             isLeading = false;
         } else if (codeUnit == '\t' || codeUnit == '\r' || codeUnit == '\n') continue;
-        if (!protocol) throw std::invalid_argument(__func__);
-        const char expected = *protocol++;
+        if (!proto) throw std::invalid_argument(__func__);
+        const char expected = *proto++;
         if (!expected) return codeUnit == ':';
         if (!IsASCIIAlphaCaselessEqual(codeUnit, expected)) return false;
     }

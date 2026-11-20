@@ -134,32 +134,38 @@ GuestJSString* APS5_VABI JSStringCreateWithUTF8CString_nid_postfix(const char* t
 }
 
 GuestJSString* APS5_VABI JSStringRetain_nid_postfix(GuestJSString* string) {
-    if (!string) throw std::invalid_argument("JSStringRetain: null string");
-    string->references.fetch_add(1, std::memory_order_relaxed);
-    return string;
+    auto* const str = string;
+    if (!str) throw std::invalid_argument("JSStringRetain: null string");
+    str->references.fetch_add(1, std::memory_order_relaxed);
+    return str;
 }
 
 void APS5_VABI JSStringRelease_nid_postfix(GuestJSString* string) {
-    if (!string) throw std::invalid_argument("JSStringRelease: null string");
-    if (string->references.fetch_sub(1, std::memory_order_acq_rel) == 1) delete string;
+    auto* const str = string;
+    if (!str) throw std::invalid_argument("JSStringRelease: null string");
+    if (str->references.fetch_sub(1, std::memory_order_acq_rel) == 1) delete str;
 }
 
 std::size_t APS5_VABI JSStringGetLength_nid_postfix(const GuestJSString* string) {
-    return string ? string->characters.size() - 1 : 0;
+    const auto* const str = string;
+    return str ? str->characters.size() - 1 : 0;
 }
 
 const std::uint16_t* APS5_VABI JSStringGetCharactersPtr_nid_postfix(const GuestJSString* string) {
-    return string && !string->nullString ? string->characters.data() : nullptr;
+    const auto* const str = string;
+    return str && !str->nullString ? str->characters.data() : nullptr;
 }
 
 std::size_t APS5_VABI JSStringGetMaximumUTF8CStringSize_nid_postfix(const GuestJSString* string) {
-    if (!string) throw std::invalid_argument("JSStringGetMaximumUTF8CStringSize: null string");
-    const auto length = static_cast<std::uint32_t>(string->characters.size() - 1);
+    const auto* const str = string;
+    if (!str) throw std::invalid_argument("JSStringGetMaximumUTF8CStringSize: null string");
+    const auto length = static_cast<std::uint32_t>(str->characters.size() - 1);
     return static_cast<std::uint32_t>(length * 3u + 1u);
 }
 
 std::size_t APS5_VABI JSStringGetUTF8CString_nid_postfix(const GuestJSString* string, char* buffer, std::size_t bufferSize) {
-    if (!string || !buffer || !bufferSize) return 0;
+    const auto* const str = string;
+    if (!str || !buffer || !bufferSize) return 0;
     std::array<char, 4096> staging{};
     std::size_t pending = 0;
     std::size_t written = 0;
@@ -177,12 +183,12 @@ std::size_t APS5_VABI JSStringGetUTF8CString_nid_postfix(const GuestJSString* st
         pending = 0;
         return true;
     };
-    const auto count = string->characters.size() - 1;
+    const auto count = str->characters.size() - 1;
     for (std::size_t index = 0; index < count; ++index) {
-        std::uint32_t codepoint = string->characters[index];
+        std::uint32_t codepoint = str->characters[index];
         if (codepoint >= 0xD800 && codepoint <= 0xDBFF) {
             if (index + 1 == count) break;
-            const auto low = string->characters[index + 1];
+            const auto low = str->characters[index + 1];
             if (low < 0xDC00 || low > 0xDFFF) break;
             codepoint = 0x10000 + ((codepoint - 0xD800) << 10) + low - 0xDC00;
             ++index;
@@ -209,11 +215,12 @@ bool APS5_VABI JSStringIsEqual(const GuestJSString* first, const GuestJSString* 
 }
 
 bool APS5_VABI JSStringIsEqualToUTF8CString(const GuestJSString* string, const char* text) {
-    if (!text) return string && string->nullString;
+    const auto* const str = string;
+    if (!text) return str && str->nullString;
     std::size_t length = 0;
     if (!GuestTextLength(text, length)) return false;
     const auto other = Decode(text);
-    return Equal(string, other.get());
+    return Equal(str, other.get());
 }
 
 int APS5_VABI _ZN3JSC7JSProxy13visitChildrenEPNS_6JSCellERNS_11SlotVisitorE() {
@@ -423,7 +430,8 @@ int APS5_VABI _ZN9Inspector14ConsoleMessageC2EN3JSC13MessageSourceENS1_11Message
 }
 
 void APS5_VABI _ZN9Inspector13AgentRegistryC1Ev(void* self) {
-    std::memset(self, 0, 16);
+    auto* const s = self;
+    std::memset(s, 0, 16);
 }
 
 int APS5_VABI _ZN3JSC2VM16weakSetSpaceSlowEv() {
@@ -535,7 +543,8 @@ int APS5_VABI _ZN3JSC6JSLock12DropAllLocksC2EPNS_14JSGlobalObjectE() {
 }
 
 void APS5_VABI _ZN7bmalloc8FreeListC2Ev(void* self) {
-    std::memset(self, 0, 32);
+    auto* const s = self;
+    std::memset(s, 0, 32);
 }
 
 int APS5_VABI _ZN9Inspector15RemoteInspector9setClientEPNS0_6ClientE() {
@@ -771,7 +780,8 @@ int APS5_VABI _ZN10Deprecated11ScriptValueC1ERN3JSC2VMENS1_7JSValueE() {
 }
 
 void APS5_VABI _ZN10Deprecated11ScriptValueC1Ev(void* self) {
-    std::memset(self, 0, 8);
+    auto* const s = self;
+    std::memset(s, 0, 8);
 }
 
 int APS5_VABI _ZN10Deprecated11ScriptValueC2ERN3JSC2VMENS1_7JSValueE() {
@@ -779,7 +789,8 @@ int APS5_VABI _ZN10Deprecated11ScriptValueC2ERN3JSC2VMENS1_7JSValueE() {
 }
 
 void APS5_VABI _ZN10Deprecated11ScriptValueC2Ev(void* self) {
-    std::memset(self, 0, 8);
+    auto* const s = self;
+    std::memset(s, 0, 8);
 }
 
 int APS5_VABI _ZN10Deprecated12ScriptObjectC1EPN3JSC14JSGlobalObjectEPNS1_8JSObjectE() {
@@ -1603,11 +1614,13 @@ int APS5_VABI _ZN3WTF8JSONImpl5Value12escapeStringERNS_13StringBuilderENS_10Stri
 }
 
 void APS5_VABI _ZN7bmalloc11AllIsoHeapsC1ERKSt11scoped_lockIJNS_5MutexEEE(void* self, const void*) {
-    std::memset(self, 0, 8);
+    auto* const s = self;
+    std::memset(s, 0, 8);
 }
 
 void APS5_VABI _ZN7bmalloc11AllIsoHeapsC2ERKSt11scoped_lockIJNS_5MutexEEE(void* self, const void*) {
-    std::memset(self, 0, 8);
+    auto* const s = self;
+    std::memset(s, 0, 8);
 }
 
 int APS5_VABI _ZN7bmalloc11EnvironmentC1ERKSt11scoped_lockIJNS_5MutexEEE() {
@@ -1619,11 +1632,13 @@ int APS5_VABI _ZN7bmalloc11EnvironmentC2ERKSt11scoped_lockIJNS_5MutexEEE() {
 }
 
 void APS5_VABI _ZN7bmalloc12IsoTLSLayoutC1ERKSt11scoped_lockIJNS_5MutexEEE(void* self, const void*) {
-    std::memset(self, 0, 16);
+    auto* const s = self;
+    std::memset(s, 0, 16);
 }
 
 void APS5_VABI _ZN7bmalloc12IsoTLSLayoutC2ERKSt11scoped_lockIJNS_5MutexEEE(void* self, const void*) {
-    std::memset(self, 0, 16);
+    auto* const s = self;
+    std::memset(s, 0, 16);
 }
 
 int APS5_VABI _ZN7bmalloc9ScavengerC1ERKSt11scoped_lockIJNS_5MutexEEE() {
@@ -1747,14 +1762,16 @@ int APS5_VABI _ZN9Inspector25ConsoleFrontendDispatcher25messageRepeatCountUpdate
 }
 
 bool APS5_VABI _ZNK10Deprecated11ScriptValue10hasNoValueEv(const void* self) {
+    const auto* const s = self;
     const std::uint64_t* slot = nullptr;
-    std::memcpy(&slot, self, sizeof(slot));
+    std::memcpy(&slot, s, sizeof(slot));
     return slot == nullptr || *slot == 0;
 }
 
 std::uint64_t APS5_VABI _ZNK10Deprecated11ScriptValue7jsValueEv(const void* self) {
+    const auto* const s = self;
     const std::uint64_t* slot = nullptr;
-    std::memcpy(&slot, self, sizeof(slot));
+    std::memcpy(&slot, s, sizeof(slot));
     return slot == nullptr ? 0 : *slot;
 }
 

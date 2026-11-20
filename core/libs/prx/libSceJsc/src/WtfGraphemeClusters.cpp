@@ -33,8 +33,10 @@ Derived from Source/WTF/wtf/text/StringView.cpp@c55364d53f971f63a709976f168d932d
 extern "C" {
 
 bool APS5_VABI _ZNK3WTF10StringView16GraphemeClusters8IteratorneERKS2_(const Jsc::WtfAbi::GraphemeClusterIterator* self, const Jsc::WtfAbi::GraphemeClusterIterator* other) {
-    if (!self || !other || !self->impl || !other->impl) throw std::invalid_argument("WTF::StringView::GraphemeClusters::Iterator::operator!=: null iterator");
-    return self->impl->index != other->impl->index;
+    const auto* const s = self;
+    const auto* const o = other;
+    if (!s || !o || !s->impl || !o->impl) throw std::invalid_argument("WTF::StringView::GraphemeClusters::Iterator::operator!=: null iterator");
+    return s->impl->index != o->impl->index;
 }
 
 }
