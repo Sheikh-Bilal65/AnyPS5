@@ -63,7 +63,10 @@ extern "C" {
 int APS5_VABI freetypeLegacyBitmapBlend_nid_no_patch(FreeType::GuestLibrary* library, const FreeType::GuestBitmap* source, FreeType::GuestVector sourceOffset,
                                                      FreeType::GuestBitmap* target, FreeType::GuestVector* targetOffset, LegacyFreeType::Color color) {
     const FT_Color nativeColor{color.blue, color.green, color.red, color.alpha};
-    const FT_Library host = library ? library->host : nullptr;
+    FT_Library host = nullptr;
+    if (library && !CopyIn(&host, reinterpret_cast<const void*>(reinterpret_cast<std::uintptr_t>(library) + offsetof(FreeType::GuestLibrary, host)), sizeof(host))) {
+        return FT_Err_Invalid_Argument;
+    }
     if (!host || !source || !target || !targetOffset) return FT_Bitmap_Blend(nullptr, nullptr, {}, nullptr, nullptr, nativeColor);
     FreeType::GuestBitmap sourceRecord{};
     FreeType::GuestBitmap targetRecord{};
@@ -91,7 +94,8 @@ int APS5_VABI freetypeLegacyBitmapBlend_nid_no_patch(FreeType::GuestLibrary* lib
         return FT_Err_Invalid_Argument;
     }
     const FT_Error error = FT_Bitmap_Blend(host, &nativeSource, nativeSourceOffset, &nativeTarget, &nativeTargetOffset, nativeColor);
-    for (const auto& face : library->faces) {
+    auto* const lib = library;
+    for (const auto& face : lib->faces) {
         if (target == &face->slot.bitmap && face->host != nullptr && face->host->glyph != nullptr) face->host->glyph->bitmap = nativeTarget;
     }
     const FreeType::GuestVector resultOffset{nativeTargetOffset.x, nativeTargetOffset.y};

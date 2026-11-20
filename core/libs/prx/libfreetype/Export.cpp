@@ -2,6 +2,8 @@
 #include "prx/libfreetype/include/InventoryExports.hpp"
 #include "prx/libc/include/General.hpp"
 #include "prx/libc/include/general/ExportMacros.hpp"
+#include <cstddef>
+#include <cerrno>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_ERRORS_H
@@ -19,7 +21,13 @@ extern "C" {
 void APS5_VABI FT_Set_Default_Properties_nid_postfix(FreeType::GuestLibrary* library) {
     std::string environment;
     if (!CopyGuestEnvironment_nid_no_patch("FREETYPE_PROPERTIES", environment)) return;
-    FT_Library host = library ? library->host : nullptr;
+    FT_Library host = nullptr;
+    if (library) {
+        const int savedErrno = errno;
+        const bool copied = GuestCopyIn_nid_no_patch(&host, reinterpret_cast<const void*>(reinterpret_cast<std::uintptr_t>(library) + offsetof(FreeType::GuestLibrary, host)), sizeof(host));
+        errno = savedErrno;
+        if (!copied) return;
+    }
     std::size_t position = 0;
     while (position < environment.size()) {
         if (environment[position] == ' ' || environment[position] == '\t') {
