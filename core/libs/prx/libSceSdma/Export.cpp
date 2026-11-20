@@ -79,23 +79,30 @@ bool Fits(const SdmaSlot& slot, std::uint32_t dwords) {
     return static_cast<std::uint64_t>(RingPending(slot)) + dwords + RingMargin <= slot.ringDwords;
 }
 
+SdmaSlot* FindSlot(void* handle) {
+    if (!handle) return nullptr;
+    for (auto& slot : g_slots) {
+        if (&slot == handle) return slot.open ? &slot : nullptr;
+    }
+    return nullptr;
+}
+
 int Submit(void* handle, std::uint32_t dwords, bool blocking, const std::function<void(SdmaSlot&)>& emit) {
     std::lock_guard lock(g_mutex);
-    if (!handle) return SdmaErrorInvalidArgument;
-    SdmaSlot& slot = *static_cast<SdmaSlot*>(handle);
-    if (!slot.open) return SdmaErrorInvalidArgument;
-    if (!Fits(slot, dwords)) {
+    auto* const slot = FindSlot(handle);
+    if (!slot) return SdmaErrorInvalidArgument;
+    if (!Fits(*slot, dwords)) {
         if (!blocking) return SdmaErrorRingFull;
-        FlushAll(slot);
-        if (!Fits(slot, dwords)) NotImplemented_nid_no_patch("sceSdma: a command larger than the ring");
+        FlushAll(*slot);
+        if (!Fits(*slot, dwords)) NotImplemented_nid_no_patch("sceSdma: a command larger than the ring");
     }
-    emit(slot);
+    emit(*slot);
     if (blocking) {
-        EmitFence(slot);
-        Kick(slot);
+        EmitFence(*slot);
+        Kick(*slot);
         return 0;
     }
-    if (!slot.queueMode) Kick(slot);
+    if (!slot->queueMode) Kick(*slot);
     return 0;
 }
 
@@ -179,31 +186,32 @@ APS5_EXPORT("vPP6vKHY8Tg", sceSdmaPending_001_nid_no_patch);
 
 int APS5_VABI sceSdmaBeginQueueMode(void* handle) {
     std::lock_guard lock(g_mutex);
-    if (!handle) return SdmaErrorInvalidArgument;
-    auto& slot = *static_cast<SdmaSlot*>(handle);
-    FlushAll(slot);
-    slot.queueMode = true;
+    auto* const slot = FindSlot(handle);
+    if (!slot) return SdmaErrorInvalidArgument;
+    FlushAll(*slot);
+    slot->queueMode = true;
     return 0;
 }
 
 int APS5_VABI sceSdmaCancelQueue(void* handle) {
     std::lock_guard lock(g_mutex);
-    if (!handle) return SdmaErrorInvalidArgument;
-    auto& slot = *static_cast<SdmaSlot*>(handle);
-    if (!slot.queueMode) return SdmaErrorNotQueueMode;
-    if (slot.pendingDwords != RingPending(slot)) NotImplemented_nid_no_patch("sceSdmaCancelQueue: a queue of more than 65535 dwords, which the module rewinds only in part");
-    slot.writeIndex = static_cast<std::uint32_t>((static_cast<std::uint64_t>(slot.writeIndex) + slot.ringDwords - slot.pendingDwords % slot.ringDwords) % slot.ringDwords);
-    slot.pendingDwords = 0;
-    slot.deferred.clear();
-    slot.watchedFence = 0;
-    slot.fenceIndex = 0;
+    auto* const slot = FindSlot(handle);
+    if (!slot) return SdmaErrorInvalidArgument;
+    if (!slot->queueMode) return SdmaErrorNotQueueMode;
+    if (slot->pendingDwords != RingPending(*slot)) NotImplemented_nid_no_patch("sceSdmaCancelQueue: a queue of more than 65535 dwords, which the module rewinds only in part");
+    slot->writeIndex = static_cast<std::uint32_t>((static_cast<std::uint64_t>(slot->writeIndex) + slot->ringDwords - slot->pendingDwords % slot->ringDwords) % slot->ringDwords);
+    slot->pendingDwords = 0;
+    slot->deferred.clear();
+    slot->watchedFence = 0;
+    slot->fenceIndex = 0;
     return 0;
 }
 
 int APS5_VABI sceSdmaClose(void* handle) {
     std::lock_guard lock(g_mutex);
-    if (!handle) return SdmaErrorInvalidArgument;
-    *static_cast<SdmaSlot*>(handle) = SdmaSlot{};
+    auto* const slot = FindSlot(handle);
+    if (!slot) return SdmaErrorInvalidArgument;
+    *slot = SdmaSlot{};
     return 0;
 }
 
@@ -272,22 +280,22 @@ int APS5_VABI sceSdmaCopyWindowTiledNonBlocking(void) {
 
 int APS5_VABI sceSdmaEndQueueMode(void* handle) {
     std::lock_guard lock(g_mutex);
-    if (!handle) return SdmaErrorInvalidArgument;
-    auto& slot = *static_cast<SdmaSlot*>(handle);
-    FlushAll(slot);
-    slot.queueMode = false;
+    auto* const slot = FindSlot(handle);
+    if (!slot) return SdmaErrorInvalidArgument;
+    FlushAll(*slot);
+    slot->queueMode = false;
     return 0;
 }
 
 int APS5_VABI sceSdmaFenceNonBlocking(void* handle) {
     std::lock_guard lock(g_mutex);
-    if (!handle) return SdmaErrorInvalidArgument;
-    auto& slot = *static_cast<SdmaSlot*>(handle);
-    if (static_cast<std::uint64_t>(RingPending(slot)) + FencePacket + 8 > slot.ringDwords) return SdmaErrorRingFull;
-    if (slot.fenceIndex >= FenceSlots - 1) return SdmaErrorRingFull;
-    slot.watchedFence = EmitFence(slot);
-    ++slot.fenceIndex;
-    if (!slot.queueMode) Kick(slot);
+    auto* const slot = FindSlot(handle);
+    if (!slot) return SdmaErrorInvalidArgument;
+    if (static_cast<std::uint64_t>(RingPending(*slot)) + FencePacket + 8 > slot->ringDwords) return SdmaErrorRingFull;
+    if (slot->fenceIndex >= FenceSlots - 1) return SdmaErrorRingFull;
+    slot->watchedFence = EmitFence(*slot);
+    ++slot->fenceIndex;
+    if (!slot->queueMode) Kick(*slot);
     return 0;
 }
 
@@ -297,8 +305,9 @@ int APS5_VABI sceSdmaFinalize(void) {
 
 int APS5_VABI sceSdmaFlushAll(void* handle) {
     std::lock_guard lock(g_mutex);
-    if (!handle) return SdmaErrorInvalidArgument;
-    FlushAll(*static_cast<SdmaSlot*>(handle));
+    auto* const slot = FindSlot(handle);
+    if (!slot) return SdmaErrorInvalidArgument;
+    FlushAll(*slot);
     return 0;
 }
 
@@ -312,8 +321,9 @@ int APS5_VABI sceSdmaInitialize(void) {
 
 int APS5_VABI sceSdmaKickQueue(void* handle) {
     std::lock_guard lock(g_mutex);
-    if (!handle) return SdmaErrorInvalidArgument;
-    Kick(*static_cast<SdmaSlot*>(handle));
+    auto* const slot = FindSlot(handle);
+    if (!slot) return SdmaErrorInvalidArgument;
+    Kick(*slot);
     return 0;
 }
 
@@ -339,12 +349,12 @@ int APS5_VABI sceSdmaQueryWorkingBufferSize(void) {
 
 int APS5_VABI sceSdmaTryFlush(void* handle) {
     std::lock_guard lock(g_mutex);
-    if (!handle) return SdmaErrorInvalidArgument;
-    auto& slot = *static_cast<SdmaSlot*>(handle);
-    if (slot.watchedFence == 0) return 0;
-    if (slot.fencesExecuted < slot.watchedFence) return SdmaErrorFencePending;
-    slot.watchedFence = 0;
-    slot.fenceIndex = 0;
+    auto* const slot = FindSlot(handle);
+    if (!slot) return SdmaErrorInvalidArgument;
+    if (slot->watchedFence == 0) return 0;
+    if (slot->fencesExecuted < slot->watchedFence) return SdmaErrorFencePending;
+    slot->watchedFence = 0;
+    slot->fenceIndex = 0;
     return 0;
 }
 
