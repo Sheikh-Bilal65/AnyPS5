@@ -40,9 +40,10 @@ uint32_t* APS5_VABI sceAgcDcbSetWorkloadComplete(CommandBuffer* buf, uint32_t st
 
 uint32_t* APS5_VABI sceAgcDcbSetWorkloadsActive(CommandBuffer* buf, uint32_t stream_id, const uint32_t* workload_ids, uint32_t workload_count) {
  if (buf == nullptr || workload_ids == nullptr || workload_count == 0 || workload_count > MaxActiveCount || !AgcDriverWorkloadStreamRegistered_nid_postfix(stream_id)) return nullptr;
+ const auto* const ids = workload_ids;
  std::uint64_t mask = 0;
  for (std::uint32_t index = 0; index < workload_count; ++index) {
-  const auto id = workload_ids[index];
+  const auto id = ids[index];
   if (id > MaxWorkloadId) return nullptr;
   const std::uint64_t bit = std::uint64_t{1} << id;
   if ((mask & bit) != 0) return nullptr;

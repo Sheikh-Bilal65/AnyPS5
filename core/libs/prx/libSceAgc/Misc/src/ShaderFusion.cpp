@@ -356,30 +356,33 @@ extern "C" {
 
 int APS5_VABI sceAgcFuseShaderHalves_0200(Shader* fused_result, const Shader* front, const Shader* back, void* scratch_mem) {
     if (fused_result == nullptr || front == nullptr || back == nullptr) APS5_INVALID_ARG_EX;
-    if (!ValidHalves(front, back)) return GRAPHICS5_ERROR_INVALID_SHADER_HALVES;
-    if (front->specials == nullptr || back->specials == nullptr) Fail("sceAgcFuseShaderHalves_0200", "shader half has no special registers");
-    const bool isGs = GeometryHalves(front);
+    const auto* const frontHalf = front;
+    const auto* const backHalf = back;
+    auto* const result = fused_result;
+    if (!ValidHalves(frontHalf, backHalf)) return GRAPHICS5_ERROR_INVALID_SHADER_HALVES;
+    if (frontHalf->specials == nullptr || backHalf->specials == nullptr) Fail("sceAgcFuseShaderHalves_0200", "shader half has no special registers");
+    const bool isGs = GeometryHalves(frontHalf);
     const std::uint32_t stageBit = isGs ? (1u << 22u) : (1u << 21u);
-    if (((front->specials->vgt_shader_stages_en.value ^ back->specials->vgt_shader_stages_en.value) & stageBit) != 0) {
+    if (((frontHalf->specials->vgt_shader_stages_en.value ^ backHalf->specials->vgt_shader_stages_en.value) & stageBit) != 0) {
         return GRAPHICS5_ERROR_INVALID_SHADER_HALVES;
     }
-    if (isGs) return FuseGeometryHalves(fused_result, front, back, scratch_mem);
+    if (isGs) return FuseGeometryHalves(result, frontHalf, backHalf, scratch_mem);
     if (scratch_mem == nullptr) Fail("sceAgcFuseShaderHalves_0200", "hull halves need fused shader memory");
-    *fused_result = *back;
-    fused_result->type = static_cast<std::uint8_t>(ShaderBinaryType::Hs);
+    *result = *backHalf;
+    result->type = static_cast<std::uint8_t>(ShaderBinaryType::Hs);
     if (scratch_mem != nullptr) {
         auto* regs = static_cast<ShaderRegister*>(scratch_mem);
-        std::memcpy(regs, back->sh_registers, std::size_t{back->num_sh_registers} * sizeof(ShaderRegister));
-        fused_result->sh_registers = regs;
+        std::memcpy(regs, backHalf->sh_registers, std::size_t{backHalf->num_sh_registers} * sizeof(ShaderRegister));
+        result->sh_registers = regs;
     }
-    ShaderRegister* fused = fused_result->sh_registers;
-    const std::uint32_t fusedCount = fused_result->num_sh_registers;
-    const std::uint32_t frontCount = front->num_sh_registers;
+    ShaderRegister* fused = result->sh_registers;
+    const std::uint32_t fusedCount = result->num_sh_registers;
+    const std::uint32_t frontCount = frontHalf->num_sh_registers;
     for (std::uint32_t occurrence = 0; occurrence < 2; ++occurrence) {
-        FindRegister(fused, fusedCount, SPI_SHADER_PGM_CHKSUM_HS, occurrence).value = FindRegister(front->sh_registers, frontCount, SPI_SHADER_PGM_CHKSUM_HS, occurrence).value;
+        FindRegister(fused, fusedCount, SPI_SHADER_PGM_CHKSUM_HS, occurrence).value = FindRegister(frontHalf->sh_registers, frontCount, SPI_SHADER_PGM_CHKSUM_HS, occurrence).value;
     }
-    const auto& frontRsrc1 = FindRegister(front->sh_registers, frontCount, SPI_SHADER_PGM_RSRC1_HS);
-    const auto& frontRsrc2 = FindRegister(front->sh_registers, frontCount, SPI_SHADER_PGM_RSRC2_HS);
+    const auto& frontRsrc1 = FindRegister(frontHalf->sh_registers, frontCount, SPI_SHADER_PGM_RSRC1_HS);
+    const auto& frontRsrc2 = FindRegister(frontHalf->sh_registers, frontCount, SPI_SHADER_PGM_RSRC2_HS);
     auto& fusedRsrc1 = FindRegister(fused, fusedCount, SPI_SHADER_PGM_RSRC1_HS);
     auto& fusedRsrc2 = FindRegister(fused, fusedCount, SPI_SHADER_PGM_RSRC2_HS);
     const std::uint32_t frontVgprs = ((frontRsrc1.value & 0x3fu) + 1u) * 4u;
@@ -394,10 +397,10 @@ int APS5_VABI sceAgcFuseShaderHalves_0200(Shader* fused_result, const Shader* fr
     fusedRsrc2.value = (fusedRsrc2.value & 0xf7ffffc1u) | (frontRsrc2.value & 0x0800003eu);
     auto& loRegister = FindRegister(fused, fusedCount, SPI_SHADER_PGM_LO_LS);
     auto& hiRegister = FindRegister(fused, fusedCount, SPI_SHADER_PGM_LO_LS + 1u);
-    const auto address = reinterpret_cast<std::uint64_t>(front->code);
+    const auto address = reinterpret_cast<std::uint64_t>(frontHalf->code);
     loRegister.value = static_cast<std::uint32_t>(address >> 8u);
     hiRegister.value = (hiRegister.value & 0xffffff00u) | static_cast<std::uint32_t>((address >> 40u) & 0xffu);
-    fused_result->user_data = nullptr;
+    result->user_data = nullptr;
     return 0;
 }
 
@@ -407,20 +410,24 @@ int APS5_VABI sceAgcFuseShaderHalves_nid_postfix(Shader* fused_result, const Sha
 
 int APS5_VABI sceAgcGetFusedShaderSize_0080(SizeAlign* dst, const Shader* front, const Shader* back) {
     if (dst == nullptr || front == nullptr || back == nullptr) APS5_INVALID_ARG_EX;
-    if (!ValidHalves(front, back)) return GRAPHICS5_ERROR_INVALID_SHADER_HALVES;
-    if (GeometryHalves(front)) ComputeGeometryLayout("sceAgcGetFusedShaderSize_0080", front, back);
-    dst->m_size = std::uint64_t{back->num_sh_registers} * sizeof(ShaderRegister);
-    dst->m_align = 4;
+    const auto* const backHalf = back;
+    auto* const out = dst;
+    if (!ValidHalves(front, backHalf)) return GRAPHICS5_ERROR_INVALID_SHADER_HALVES;
+    if (GeometryHalves(front)) ComputeGeometryLayout("sceAgcGetFusedShaderSize_0080", front, backHalf);
+    out->m_size = std::uint64_t{backHalf->num_sh_registers} * sizeof(ShaderRegister);
+    out->m_align = 4;
     return 0;
 }
 
 int APS5_VABI sceAgcGetFusedShaderSize(SizeAlign* dst, const Shader* front, const Shader* back) {
     if (front == nullptr || back == nullptr) APS5_INVALID_ARG_EX;
-    if (!ValidHalves(front, back)) return GRAPHICS5_ERROR_INVALID_SHADER_HALVES;
+    const auto* const backHalf = back;
+    if (!ValidHalves(front, backHalf)) return GRAPHICS5_ERROR_INVALID_SHADER_HALVES;
     if (dst == nullptr) APS5_INVALID_ARG_EX;
-    dst->m_size = std::uint64_t{back->num_sh_registers} * sizeof(ShaderRegister);
+    auto* const out = dst;
+    out->m_size = std::uint64_t{backHalf->num_sh_registers} * sizeof(ShaderRegister);
     const std::uint32_t align = 4;
-    std::memcpy(&dst->m_align, &align, sizeof(align));
+    std::memcpy(&out->m_align, &align, sizeof(align));
     return 0;
 }
 

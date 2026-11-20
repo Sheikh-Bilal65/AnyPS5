@@ -11,37 +11,39 @@ extern "C" {
 
 int APS5_VABI sceAgcQueueEndOfPipeActionPatchAddress(std::uint32_t* cmd, const volatile Label* address) {
     Agc::Command::CheckAddress(reinterpret_cast<std::uintptr_t>(cmd), 4, __func__);
+    auto* const packet = cmd;
     const auto guestAddress = reinterpret_cast<std::uintptr_t>(address);
-    const auto opcode = (cmd[0] >> 8u) & 0xffu;
+    const auto opcode = (packet[0] >> 8u) & 0xffu;
     if (opcode == 0x49u) {
-        Agc::Command::ValidatePacket(cmd, opcode, 8, __func__);
-        const auto dataSelect = cmd[2] >> 29u;
+        Agc::Command::ValidatePacket(packet, opcode, 8, __func__);
+        const auto dataSelect = packet[2] >> 29u;
         Agc::Command::CheckAddress(guestAddress, dataSelect == 2 || dataSelect == 3 ? 8 : 4, __func__);
-        cmd[3] = static_cast<std::uint32_t>(guestAddress);
-        cmd[4] = static_cast<std::uint32_t>(guestAddress >> 32u);
+        packet[3] = static_cast<std::uint32_t>(guestAddress);
+        packet[4] = static_cast<std::uint32_t>(guestAddress >> 32u);
     } else {
-        Agc::Command::ValidatePacket(cmd, 0x47u, 6, __func__);
-        const auto dataSelect = cmd[3] >> 29u;
+        Agc::Command::ValidatePacket(packet, 0x47u, 6, __func__);
+        const auto dataSelect = packet[3] >> 29u;
         Agc::Command::CheckAddress(guestAddress, dataSelect == 2 || dataSelect == 3 ? 8 : 4, __func__);
         Agc::Command::CheckBits(guestAddress, 0xffffffffffffull, __func__);
-        cmd[2] = static_cast<std::uint32_t>(guestAddress);
-        cmd[3] = (cmd[3] & 0xffff0000u) | static_cast<std::uint32_t>(guestAddress >> 32u);
+        packet[2] = static_cast<std::uint32_t>(guestAddress);
+        packet[3] = (packet[3] & 0xffff0000u) | static_cast<std::uint32_t>(guestAddress >> 32u);
     }
     return 0;
 }
 
 int APS5_VABI sceAgcQueueEndOfPipeActionPatchData(uint32_t* cmd, uint64_t data) {
     Agc::Command::ValidatePacket(cmd, 0x49u, 8, __func__);
-    const auto dataSelect = cmd[2] >> 29u;
-    if (((cmd[2] >> 24u) & 7u) == 4u) {
-        Agc::Command::Require(data == 0 && (cmd[3] | cmd[4]) == 0, __func__, "interrupt-only release cannot write data");
+    auto* const packet = cmd;
+    const auto dataSelect = packet[2] >> 29u;
+    if (((packet[2] >> 24u) & 7u) == 4u) {
+        Agc::Command::Require(data == 0 && (packet[3] | packet[4]) == 0, __func__, "interrupt-only release cannot write data");
     } else if (dataSelect == 5u) {
         Agc::Command::Require(data == 0, __func__, "GDS release cannot use immediate data");
         return 0;
     }
     if (dataSelect == 1u) Agc::Command::CheckBits(data, 0xffffffffu, __func__);
-    cmd[5] = static_cast<std::uint32_t>(data);
-    cmd[6] = static_cast<std::uint32_t>(data >> 32u);
+    packet[5] = static_cast<std::uint32_t>(data);
+    packet[6] = static_cast<std::uint32_t>(data >> 32u);
     return 0;
 }
 
@@ -52,7 +54,8 @@ int APS5_VABI sceAgcQueueEndOfPipeActionPatchGcrCntl(std::uint32_t* cmd, std::ui
     if ((control & 0x300u) == 0x100u) {
         control |= 0x200u;
     }
-    cmd[1] = (cmd[1] & ~(0xfffu << 12u)) | (control << 12u);
+    auto* const packet = cmd;
+    packet[1] = (packet[1] & ~(0xfffu << 12u)) | (control << 12u);
     return 0;
 }
 
@@ -60,7 +63,8 @@ int APS5_VABI sceAgcQueueEndOfPipeActionPatchType(std::uint32_t* cmd, std::uint8
     Agc::Command::ValidatePacket(cmd, 0x49u, 8, __func__);
     Agc::Command::CheckBits(action, 0x3fu, __func__);
     const std::uint32_t eventIndex = action >= 0x2fu ? 6u : 5u;
-    cmd[1] = (cmd[1] & ~0xf3fu) | action | (eventIndex << 8u);
+    auto* const packet = cmd;
+    packet[1] = (packet[1] & ~0xf3fu) | action | (eventIndex << 8u);
     return 0;
 }
 

@@ -31,10 +31,11 @@ extern "C" {
 
 int APS5_VABI sceAgcBranchPatchSetCompareAddress(std::uint32_t* cmd, const volatile std::uint64_t* compareAddress) {
     Agc::Command::ValidatePacket(cmd, 0x3fu, 14, __func__);
+    auto* const packet = cmd;
     const auto address = reinterpret_cast<std::uintptr_t>(compareAddress);
     Agc::Command::CheckAddress(address, 8, __func__);
-    cmd[2] = static_cast<std::uint32_t>(address);
-    cmd[3] = static_cast<std::uint32_t>(address >> 32u);
+    packet[2] = static_cast<std::uint32_t>(address);
+    packet[3] = static_cast<std::uint32_t>(address >> 32u);
     return 0;
 }
 

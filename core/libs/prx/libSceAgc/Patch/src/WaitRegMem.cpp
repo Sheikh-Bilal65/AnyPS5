@@ -51,14 +51,15 @@ int SetWriteDataCachePolicy(std::uint32_t* cmd, std::uint8_t cachePolicy, const 
 extern "C" {
 
 int APS5_VABI sceAgcWaitRegMemPatchAddress(std::uint32_t* cmd, const volatile void* address) {
-    auto* wait = Agc::Command::ValidateWait(cmd, __func__);
+    auto* const target = cmd;
+    auto* wait = Agc::Command::ValidateWait(target, __func__);
     const auto guestAddress = reinterpret_cast<std::uintptr_t>(address);
     const auto is32Bit = ((wait[0] >> 8u) & 0xffu) == 0x3cu;
     const auto lowMask = is32Bit ? 3u : 7u;
     if (guestAddress != 0) Agc::Command::CheckAddress(guestAddress, is32Bit ? 4 : 8, __func__);
     Agc::Command::CheckBits(guestAddress, 0xffffffffffffull, __func__);
-    cmd[2] =(cmd[2] & 0xffff0000u) | (static_cast<std::uint32_t>(guestAddress >> 32u) & 0xffffu);
-    cmd[3] = static_cast<std::uint32_t>(guestAddress);
+    target[2] =(target[2] & 0xffff0000u) | (static_cast<std::uint32_t>(guestAddress >> 32u) & 0xffffu);
+    target[3] = static_cast<std::uint32_t>(guestAddress);
     wait[2] = (static_cast<std::uint32_t>(guestAddress) & ~lowMask) | (wait[2] & lowMask);
     wait[3] = (static_cast<std::uint32_t>(guestAddress >> 32u) & 0x3ffffu) | (wait[3] & 0xfffc0000u);
     return 0;
@@ -110,10 +111,11 @@ int APS5_VABI sceAgcAsyncWriteDataPatchSetCachePolicy(std::uint32_t* cmd, std::u
 
 int APS5_VABI sceAgcAcquireMemSetEngine(std::uint32_t* packet, std::uint8_t engine) {
     Agc::Command::CheckAddress(reinterpret_cast<std::uintptr_t>(packet), 4, __func__);
-    if (((packet[0] >> 8u) & 0xffu) != 0x58u) {
+    auto* const out = packet;
+    if (((out[0] >> 8u) & 0xffu) != 0x58u) {
         return static_cast<int>(0x8a6c000c);
     }
-    packet[1] = (packet[1] & 0x7fffffffu) | (static_cast<std::uint32_t>(engine) << 31u);
+    out[1] = (out[1] & 0x7fffffffu) | (static_cast<std::uint32_t>(engine) << 31u);
     return 0;
 }
 

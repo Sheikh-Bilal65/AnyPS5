@@ -75,7 +75,8 @@ extern "C" std::uint32_t* APS5_VABI sceAgcCbMemsetExclusive(CommandBuffer* buffe
         static_cast<std::uint32_t>(size >> 4u), 0x4bfacu, 0u, 0u, 0u, 0u,
         static_cast<std::uint32_t>((size + 0xffffu) >> 16u)
     };
-    std::memcpy(data.data() + 4, pattern, 16);
+    const auto* const patternBytes = pattern;
+    std::memcpy(data.data() + 4, patternBytes, 16);
     sceAgcCbSetShRegisterRangeDirect(buffer, 0x240u, data.data(), static_cast<std::uint32_t>(data.size()));
     const auto mask = (static_cast<std::uint32_t>(sceKernelGetMainSocId()) & ~0x1fu) == 0x840fc0u ? 0x00ff00ffu : 0x0003fcffu;
     Agc::Command::Emit(buffer, 0x76u, {0x216u, mask}, function);

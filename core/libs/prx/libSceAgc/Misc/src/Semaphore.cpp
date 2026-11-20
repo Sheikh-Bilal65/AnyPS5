@@ -61,7 +61,8 @@ int APS5_VABI sceAgcGetSemaphoreLabel(std::uint32_t index, void** label) {
     if (semaphoreBytes == 0) return GRAPHICS5_ERROR_SEMAPHORE_MEMORY_UNREGISTERED;
     if (index >= semaphoreBytes / semaphoreLabelBytes) return GRAPHICS5_ERROR_OUT_OF_RANGE;
     Agc::Command::Require(label != nullptr, __func__, "null semaphore label output");
-    *label = semaphoreMemory + static_cast<std::uint64_t>(index) * semaphoreLabelBytes;
+    auto* const out = label;
+    *out = semaphoreMemory + static_cast<std::uint64_t>(index) * semaphoreLabelBytes;
     return 0;
 }
 

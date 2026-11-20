@@ -93,9 +93,10 @@ std::uint32_t* APS5_VABI sceAgcAcbSetFlip(CommandBuffer* buf, std::uint32_t vide
 
 std::uint32_t* APS5_VABI sceAgcAcbSetWorkloadsActive(CommandBuffer* buf, std::uint32_t streamId, const std::uint32_t* workloadIds, std::uint32_t workloadCount) {
     if (buf == nullptr || workloadIds == nullptr || workloadCount == 0 || workloadCount > MaxActiveCount || !AgcDriverWorkloadStreamRegistered_nid_postfix(streamId)) return nullptr;
+    const auto* const ids = workloadIds;
     std::uint64_t mask = 0;
     for (std::uint32_t index = 0; index < workloadCount; ++index) {
-        const auto id = workloadIds[index];
+        const auto id = ids[index];
         if (id > MaxWorkloadId) return nullptr;
         const std::uint64_t bit = std::uint64_t{1} << id;
         if ((mask & bit) != 0) return nullptr;

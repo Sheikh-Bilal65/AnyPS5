@@ -31,7 +31,8 @@ int APS5_VABI sceAgcJumpPatchSetTarget(uint32_t* cmd, const volatile uint32_t* t
 int APS5_VABI sceAgcJumpPatchSetTarget_0300(uint32_t* cmd, uint64_t cache_policy, const volatile uint32_t* target, uint32_t size_in_dwords) {
     Agc::Command::CheckBits(cache_policy, 3u, __func__);
     PatchJump(cmd, target, size_in_dwords, __func__);
-    cmd[3] = (cmd[3] & ~(3u << 28u)) | (static_cast<std::uint32_t>(cache_policy) << 28u);
+    auto* const packet = cmd;
+    packet[3] = (packet[3] & ~(3u << 28u)) | (static_cast<std::uint32_t>(cache_policy) << 28u);
     return 0;
 }
 

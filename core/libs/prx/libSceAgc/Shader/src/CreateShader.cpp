@@ -61,7 +61,8 @@ int APS5_VABI sceAgcCreateShader(Shader** dst, void* header, const volatile void
     }
 
     AgcDriverRegisterShader_nid_postfix(h);
-    *dst = h;
+    auto* const out = dst;
+    *out = h;
     return 0;
 }
 

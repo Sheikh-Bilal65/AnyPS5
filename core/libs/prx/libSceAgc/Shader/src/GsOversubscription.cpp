@@ -69,17 +69,20 @@ int APS5_VABI sceAgcGetGsOversubscription(ShaderRegister* regs, const Shader* gs
     ShaderRegister pcAlloc{ShaderRegs::GE_PC_ALLOC, 0u};
     ShaderRegister rsrc4{ShaderRegs::SPI_SHADER_PGM_RSRC4_GS, 0u};
 
+    const auto* const gsShader = gs;
+    auto* const outRegs = regs;
+
     if (budget == std::numeric_limits<std::uint32_t>::max()) {
         pcAlloc.value = GE_PC_ALLOC_FULL;
         rsrc4.value = LATE_ALLOC_GS_FULL;
     } else if (budget != 0) {
-        if (gs == nullptr || gs->specials == nullptr) {
+        if (gsShader == nullptr || gsShader->specials == nullptr) {
             throw std::runtime_error(std::string(__func__) + ": gs or its special registers are null");
         }
-        const GsOccupancyLimits base = getGsOccupancyLimits(gs, 1024u, 128u);
-        const GsOccupancyLimits expanded = getGsOccupancyLimits(gs, 2048u, 382u);
+        const GsOccupancyLimits base = getGsOccupancyLimits(gsShader, 1024u, 128u);
+        const GsOccupancyLimits expanded = getGsOccupancyLimits(gsShader, 2048u, 382u);
         const std::uint32_t baseMin = std::min(base.vertex, base.exportCount);
-        const std::uint32_t limitShift = (gs->specials->vgt_shader_stages_en.value & VGT_SHADER_STAGES_GS_W32_BIT) != 0 ? 5u : 6u;
+        const std::uint32_t limitShift = (gsShader->specials->vgt_shader_stages_en.value & VGT_SHADER_STAGES_GS_W32_BIT) != 0 ? 5u : 6u;
         const std::uint32_t expandedLimit = std::min({expanded.vertex, expanded.exportCount, budget >> limitShift, 1024u});
         const std::uint32_t headroom = expandedLimit > baseMin ? expandedLimit - baseMin : 0u;
         const float scaled = std::fma(factor, static_cast<float>(headroom), static_cast<float>(baseMin));
@@ -104,8 +107,8 @@ int APS5_VABI sceAgcGetGsOversubscription(ShaderRegister* regs, const Shader* gs
         }
     }
 
-    regs[0] = pcAlloc;
-    regs[1] = rsrc4;
+    outRegs[0] = pcAlloc;
+    outRegs[1] = rsrc4;
     return 0;
 }
 
