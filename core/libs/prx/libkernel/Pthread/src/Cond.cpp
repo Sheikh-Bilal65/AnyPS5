@@ -227,26 +227,29 @@ int APS5_VABI scePthreadCondattrSetclock(PthreadCondattr* attr, KernelClockid cl
 }
 
 int APS5_VABI scePthreadCondInit(PthreadCond* cond, const PthreadCondattr* attr, const char*) {
-    if (!cond)
+    auto* const targetCond = cond;
+    const auto* const targetAttr = attr;
+    if (!targetCond)
         throw std::invalid_argument("Condition variable pointer is null");
     auto replacement = std::make_unique<PthreadCondPrivate>();
-    if (attr && *attr)
-        replacement->_clockid = (*attr)->_clockid;
+    if (targetAttr && *targetAttr)
+        replacement->_clockid = (*targetAttr)->_clockid;
     std::lock_guard lock(InitializationMutex());
-    std::atomic_ref<PthreadCond>(*cond).store(replacement.release(), std::memory_order_release);
+    std::atomic_ref<PthreadCond>(*targetCond).store(replacement.release(), std::memory_order_release);
     return 0;
 }
 
 int APS5_VABI scePthreadCondDestroy(PthreadCond* cond) {
-    if (!cond)
+    auto* const targetCond = cond;
+    if (!targetCond)
         throw std::invalid_argument("Condition variable pointer is null");
     std::lock_guard lock(InitializationMutex());
-    if (*cond == destroyedCond())
+    if (*targetCond == destroyedCond())
         return SCE_KERNEL_ERROR_EINVAL;
-    if (*cond == nullptr)
+    if (*targetCond == nullptr)
         return 0;
-    delete *cond;
-    std::atomic_ref<PthreadCond>(*cond).store(destroyedCond(), std::memory_order_release);
+    delete *targetCond;
+    std::atomic_ref<PthreadCond>(*targetCond).store(destroyedCond(), std::memory_order_release);
     return 0;
 }
 

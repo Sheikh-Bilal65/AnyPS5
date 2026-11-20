@@ -73,8 +73,9 @@ bool RwlockOperations::LoadAttribute(const PthreadRwlockattr* attr, PthreadRwloc
 extern "C" {
 
 int APS5_VABI scePthreadRwlockDestroy(PthreadRwlock* rwlock) {
-    if (!rwlock) throw std::runtime_error("scePthreadRwlockDestroy: null rwlock");
-    std::atomic_ref<PthreadRwlock> slot(*rwlock);
+    auto* const targetRwlock = rwlock;
+    if (!targetRwlock) throw std::runtime_error("scePthreadRwlockDestroy: null rwlock");
+    std::atomic_ref<PthreadRwlock> slot(*targetRwlock);
     PthreadRwlock lock = slot.load(std::memory_order_acquire);
     do {
         if (lock == nullptr) return SCE_OK;
@@ -214,10 +215,11 @@ int APS5_VABI scePthreadRwlockattrSettype(PthreadRwlockattr* attr, int type) {
 }
 
 int APS5_VABI pthread_rwlock_setname_np_nid_postfix(PthreadRwlock* rwlock, const char* name) {
-    if (!rwlock) throw std::runtime_error("pthread_rwlock_setname_np: null rwlock");
+    auto* const targetRwlock = rwlock;
+    if (!targetRwlock) throw std::runtime_error("pthread_rwlock_setname_np: null rwlock");
     PthreadRwlock probe = nullptr;
-    if (!GuestCopyIn_nid_no_patch(&probe, rwlock, sizeof(probe))) return POSIX_EFAULT;
-    PthreadRwlock current = std::atomic_ref<PthreadRwlock>(*rwlock).load(std::memory_order_acquire);
+    if (!GuestCopyIn_nid_no_patch(&probe, targetRwlock, sizeof(probe))) return POSIX_EFAULT;
+    PthreadRwlock current = std::atomic_ref<PthreadRwlock>(*targetRwlock).load(std::memory_order_acquire);
     if (current == nullptr) throw std::runtime_error("pthread_rwlock_setname_np: statically initialized rwlock");
     if (current == DestroyedRwlock) throw std::runtime_error("pthread_rwlock_setname_np: destroyed rwlock");
     std::lock_guard state(current->_state);

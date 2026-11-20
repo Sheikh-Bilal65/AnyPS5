@@ -72,8 +72,9 @@ int APS5_VABI pthread_attr_getschedparam_nid_postfix(const PthreadAttr* attr, Ke
     PthreadAttr handle = nullptr;
     if (const int error = LoadAttribute(attr, handle)) return error;
     if (!param) return PosixThread::GUEST_EINVAL;
+    auto* const outParam = param;
     const int priority = handle->_schedpriority;
-    return StoreOutput<int>(&param->sched_priority, priority);
+    return StoreOutput<int>(&outParam->sched_priority, priority);
 }
 
 int APS5_VABI pthread_attr_getschedpolicy_nid_postfix(const PthreadAttr* attr, int* policy) {

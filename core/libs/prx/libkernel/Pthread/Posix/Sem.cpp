@@ -121,7 +121,10 @@ int APS5_VABI sem_init_nid_postfix(void* sem, int pshared, unsigned int value) {
     if (!sem || value > GUEST_SEM_VALUE_MAX) return Fail(PosixThread::GUEST_EINVAL);
     auto* semaphore = new PosixSemaphore();
     semaphore->count = value;
-    std::memcpy(sem, &semaphore, sizeof(semaphore));
+    if (!GuestCopyOut_nid_no_patch(sem, &semaphore, sizeof(semaphore))) {
+        delete semaphore;
+        return Fail(PosixThread::GUEST_EFAULT);
+    }
     return 0;
 }
 
@@ -129,7 +132,8 @@ int APS5_VABI sem_destroy_nid_postfix(void* sem) {
     auto* semaphore = Get(sem);
     if (!semaphore || IsNamed(sem)) return Fail(PosixThread::GUEST_EINVAL);
     delete semaphore;
-    std::memset(sem, 0, sizeof(semaphore));
+    PosixSemaphore* nullSemaphore = nullptr;
+    GuestCopyOut_nid_no_patch(sem, &nullSemaphore, sizeof(nullSemaphore));
     return 0;
 }
 
@@ -186,7 +190,8 @@ int APS5_VABI sem_getvalue_nid_postfix(void* sem, int* value) {
     auto* semaphore = Get(sem);
     if (!semaphore || !value) return Fail(PosixThread::GUEST_EINVAL);
     std::lock_guard lock(semaphore->lock);
-    *value = static_cast<int>(semaphore->count);
+    const int count = static_cast<int>(semaphore->count);
+    if (!GuestCopyOut_nid_no_patch(value, &count, sizeof(count))) return Fail(PosixThread::GUEST_EFAULT);
     return 0;
 }
 

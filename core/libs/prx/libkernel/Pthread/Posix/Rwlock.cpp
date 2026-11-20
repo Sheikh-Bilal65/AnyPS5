@@ -39,9 +39,10 @@ void initializeStatic(PthreadRwlock* rwlock, const char* funcName) {
 extern "C" {
 
 int APS5_VABI pthread_rwlock_destroy_nid_postfix(PthreadRwlock* rwlock) {
-    if (!rwlock) throw std::runtime_error("pthread_rwlock_destroy: null rwlock");
-    if (*rwlock == nullptr) return 0;
-    return toPosix(scePthreadRwlockDestroy(rwlock));
+    auto* const targetRwlock = rwlock;
+    if (!targetRwlock) throw std::runtime_error("pthread_rwlock_destroy: null rwlock");
+    if (*targetRwlock == nullptr) return 0;
+    return toPosix(scePthreadRwlockDestroy(targetRwlock));
 }
 
 int APS5_VABI pthread_rwlock_init_nid_postfix(PthreadRwlock* rwlock, const PthreadRwlockattr* attr) {

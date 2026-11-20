@@ -1205,33 +1205,35 @@ static void* StartNativeThread(void* opaque) {
 extern "C" {
 
 int APS5_VABI scePthreadCreate(Pthread* thread, const PthreadAttr* attr, PthreadEntry entry, void* arg, const char* name) {
-    if (!thread || !entry) throw std::runtime_error("scePthreadCreate: null arg");
+    auto* const outThread = thread;
+    const auto* inAttr = attr;
+    if (!outThread || !entry) throw std::runtime_error("scePthreadCreate: null arg");
     std::string nameCopy;
     if (name) {
         const int error = CopyGuestString_nid_no_patch(name, GUEST_THREAD_NAME_CAPACITY, nameCopy);
         if (error != 0) {
-            *thread = nullptr;
+            *outThread = nullptr;
             if (error == 63) return SCE_KERNEL_ERROR_ENAMETOOLONG;
             if (error == 12) return SCE_KERNEL_ERROR_ENOMEM;
             return SCE_KERNEL_ERROR_EFAULT;
         }
     }
-    if (attr && !*attr) attr = nullptr;
-    auto p = std::make_unique<PthreadPrivate>(attr ? *attr : nullptr);
+    if (inAttr && !*inAttr) inAttr = nullptr;
+    auto p = std::make_unique<PthreadPrivate>(inAttr ? *inAttr : nullptr);
     bool detached = false;
-    if (attr && *attr) detached = ((*attr)->_detachstate == DETACH_DETACHED);
+    if (inAttr && *inAttr) detached = ((*inAttr)->_detachstate == DETACH_DETACHED);
     p->_detached = detached;
-    p->stackSize = attr ? (*attr)->_stacksize : GetDefaultStackSize_nid_no_patch();
-    if (attr) {
-        if ((*attr)->_inheritsched != GUEST_INHERIT_SCHED)
-            p->scope = (*attr)->_scope;
+    p->stackSize = inAttr ? (*inAttr)->_stacksize : GetDefaultStackSize_nid_no_patch();
+    if (inAttr) {
+        if ((*inAttr)->_inheritsched != GUEST_INHERIT_SCHED)
+            p->scope = (*inAttr)->_scope;
         else if (CurrentGuestState().current)
             p->scope = CurrentGuestState().current->scope;
     } else if (CurrentGuestState().current) {
         p->scope = CurrentGuestState().current->scope;
     }
     if (name) p->name = std::move(nameCopy);
-    p->createdSuspended = attr && (*attr)->_createSuspended;
+    p->createdSuspended = inAttr && (*inAttr)->_createSuspended;
     p->suspended.store(p->createdSuspended, std::memory_order_relaxed);
     p->pendingException.store(0, std::memory_order_relaxed);
     std::promise<bool> start;
@@ -1262,10 +1264,10 @@ int APS5_VABI scePthreadCreate(Pthread* thread, const PthreadAttr* attr, Pthread
         throw;
     }
     auto* published = p.release();
-    published->_handleStorage = thread;
-    *thread = published;
+    published->_handleStorage = outThread;
+    *outThread = published;
     start.set_value(true);
-    RecycleJoinedThread(thread);
+    RecycleJoinedThread(outThread);
     if (detached)
         ReleaseThread(published);
 #else
@@ -1323,10 +1325,10 @@ int APS5_VABI scePthreadCreate(Pthread* thread, const PthreadAttr* attr, Pthread
         throw;
     }
     auto* published = p.release();
-    published->_handleStorage = thread;
-    *thread = published;
+    published->_handleStorage = outThread;
+    *outThread = published;
     start.set_value(true);
-    RecycleJoinedThread(thread);
+    RecycleJoinedThread(outThread);
     if (detached)
         ReleaseThread(published);
 #endif
@@ -1355,20 +1357,21 @@ int APS5_VABI JoinThread_nid_no_patch(Pthread thread, void** retval, const Kerne
         if (thread->_joining) return SCE_KERNEL_ERROR_EOPNOTSUPP;
         thread->_joining = true;
         registered.unlock();
+        const auto* const timeout = abstime;
         while (!thread->_finished.load()) {
             std::optional<std::uint64_t> deadline;
-            if (abstime != nullptr) {
+            if (timeout != nullptr) {
                 KernelTimespec now{};
                 if (clock_gettime_nid_postfix(0, &now) != 0) {
                     thread->_joining = false;
                     throw std::runtime_error("Joining guest thread: realtime clock unavailable");
                 }
-                if (abstime->tv_sec < now.tv_sec || (abstime->tv_sec == now.tv_sec && abstime->tv_nsec <= now.tv_nsec)) {
+                if (timeout->tv_sec < now.tv_sec || (timeout->tv_sec == now.tv_sec && timeout->tv_nsec <= now.tv_nsec)) {
                     thread->_joining = false;
                     return SCE_KERNEL_ERROR_ETIMEDOUT;
                 }
-                const auto seconds = static_cast<std::uint64_t>(abstime->tv_sec) - static_cast<std::uint64_t>(now.tv_sec);
-                const auto nanos = seconds > 1 ? std::int64_t{1000000000} : static_cast<std::int64_t>(seconds) * 1000000000 + abstime->tv_nsec - now.tv_nsec;
+                const auto seconds = static_cast<std::uint64_t>(timeout->tv_sec) - static_cast<std::uint64_t>(now.tv_sec);
+                const auto nanos = seconds > 1 ? std::int64_t{1000000000} : static_cast<std::int64_t>(seconds) * 1000000000 + timeout->tv_nsec - now.tv_nsec;
                 deadline = TimedWait::DeadlineNanos(static_cast<std::uint64_t>((nanos + 999) / 1000));
             }
             ThreadCancel::Wait(thread->_join_cv, lock, deadline);
@@ -1677,11 +1680,12 @@ static void APS5_VABI ResetOnce(void* once) {
 }
 
 int APS5_VABI scePthreadOnce(int32_t* once, void (APS5_VABI* init)(void)) {
-    if (!once || !init) return SCE_KERNEL_ERROR_EINVAL;
+    auto* const targetOnce = once;
+    if (!targetOnce || !init) return SCE_KERNEL_ERROR_EINVAL;
     constexpr int32_t Never = 0;
     constexpr int32_t Done = 1;
     constexpr int32_t Running = 2;
-    std::atomic_ref<int32_t> state(*once);
+    std::atomic_ref<int32_t> state(*targetOnce);
     for (int32_t expected = Never; !state.compare_exchange_strong(expected, Running, std::memory_order_acq_rel); expected = Never) {
         if (expected != Running) return SCE_OK;
         state.wait(Running, std::memory_order_acquire);
