@@ -91,10 +91,11 @@ extern "C" {
 
 int APS5_VABI ktimer_create_nid_postfix(int clock, const GuestSigevent* event, int* timerid) {
     if (clock != ClockRealtime && clock != ClockMonotonic) return static_cast<int>(Fail(GuestEinval));
-    if (event != nullptr) {
-        if (event->notify != SigevNone && event->notify != SigevSignal && event->notify != SigevThreadId)
+    const auto* const sigEvent = event;
+    if (sigEvent != nullptr) {
+        if (sigEvent->notify != SigevNone && sigEvent->notify != SigevSignal && sigEvent->notify != SigevThreadId)
             return static_cast<int>(Fail(GuestEinval));
-        if (event->notify != SigevNone && (event->signo <= 0 || event->signo > SignalMax))
+        if (sigEvent->notify != SigevNone && (sigEvent->signo <= 0 || sigEvent->signo > SignalMax))
             return static_cast<int>(Fail(GuestEinval));
     }
     int id = FirstTimer;
@@ -103,7 +104,7 @@ int APS5_VABI ktimer_create_nid_postfix(int clock, const GuestSigevent* event, i
         while (id < TimerMax && g_ktimers[id].live) ++id;
         if (id == TimerMax) return static_cast<int>(Fail(GuestEagain));
         if (timerid == nullptr) return static_cast<int>(Fail(GuestEfault));
-        if (event == nullptr || event->notify != SigevNone) NotImplemented_nid_no_patch("ktimer_create delivering a signal");
+        if (sigEvent == nullptr || sigEvent->notify != SigevNone) NotImplemented_nid_no_patch("ktimer_create delivering a signal");
         g_ktimers[id] = {true, clock, 0, 0};
     }
     if (!GuestCopyOut_nid_no_patch(timerid, &id, sizeof(id))) {

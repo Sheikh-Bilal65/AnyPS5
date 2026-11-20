@@ -107,7 +107,8 @@ int APS5_VABI sceKernelWaitSema(KernelSema sem, int need, KernelUseconds* time) 
 
  std::unique_lock<std::mutex> lock(sem->mutex);
  const void* caller = __builtin_return_address(0);
- if (TraceSync()) std::fprintf(stderr, "[sema] wait begin %p '%s' need=%d have=%d timeout=%lld caller=%p\n", static_cast<void*>(sem), sem->name.c_str(), need, sem->tokenCount, time ? static_cast<long long>(*time) : -1LL, caller);
+ const auto* const timeout = time;
+ if (TraceSync()) std::fprintf(stderr, "[sema] wait begin %p '%s' need=%d have=%d timeout=%lld caller=%p\n", static_cast<void*>(sem), sem->name.c_str(), need, sem->tokenCount, timeout ? static_cast<long long>(*timeout) : -1LL, caller);
  const auto traceSyncWaitEnd = [&](int result) {
   if (TraceSync()) std::fprintf(stderr, "[sema] wait end %p '%s' result=0x%x have=%d caller=%p\n", static_cast<void*>(sem), sem->name.c_str(), result, sem->tokenCount, caller);
  };
@@ -120,7 +121,7 @@ int APS5_VABI sceKernelWaitSema(KernelSema sem, int need, KernelUseconds* time) 
   traceSyncWaitEnd(KERNEL_SEMA_OK);
   return KERNEL_SEMA_OK;
  }
- if (time != nullptr && *time == 0) {
+ if (timeout != nullptr && *timeout == 0) {
   if (KernelTraceWaitEnabled()) KernelTraceWait_nid_postfix("sema", caller, 0, true);
   traceSyncWaitEnd(SCE_KERNEL_ERROR_ETIMEDOUT);
   return SCE_KERNEL_ERROR_ETIMEDOUT;
