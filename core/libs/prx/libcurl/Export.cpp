@@ -987,7 +987,14 @@ char* APS5_VABI curl_pushheader_byname_nid_postfix(struct curl_pushheaders* h, c
 }
 
 std::int32_t APS5_VABI curl_formadd_nid_postfix(struct guest_curl_httppost** httppost, struct guest_curl_httppost** last_post, ...) {
-    if (!httppost || !last_post) NotImplemented_nid_no_patch(__func__);
+    guest_curl_httppost* currentLast = nullptr;
+    if (!httppost || !last_post || !GuestWritable_nid_no_patch(httppost, sizeof(*httppost)) ||
+        !GuestCopyIn_nid_no_patch(last_post, currentLast) || !GuestWritable_nid_no_patch(last_post, sizeof(*last_post))) {
+        NotImplemented_nid_no_patch(__func__);
+    }
+    if (currentLast && !GuestWritable_nid_no_patch(reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t>(currentLast) + offsetof(guest_curl_httppost, next)), sizeof(guest_curl_httppost*))) {
+        NotImplemented_nid_no_patch(__func__);
+    }
     std::vector<curl_forms> options;
     bool nullArray = false;
     CURL_ARGS_START(last_post);
@@ -1030,11 +1037,13 @@ std::int32_t APS5_VABI curl_formadd_nid_postfix(struct guest_curl_httppost** htt
         return CURL_FORMADD_MEMORY;
     }
     FreeHostFormNodes(hostHead);
-    if (*last_post)
-        (*last_post)->next = guest;
-    else
-        *httppost = guest;
-    *last_post = guest;
+    if (currentLast) {
+        auto* const nextDst = reinterpret_cast<guest_curl_httppost**>(reinterpret_cast<std::uintptr_t>(currentLast) + offsetof(guest_curl_httppost, next));
+        if (!GuestCopyOut_nid_no_patch(nextDst, guest)) NotImplemented_nid_no_patch(__func__);
+    } else {
+        if (!GuestCopyOut_nid_no_patch(httppost, guest)) NotImplemented_nid_no_patch(__func__);
+    }
+    if (!GuestCopyOut_nid_no_patch(last_post, guest)) NotImplemented_nid_no_patch(__func__);
     return result;
 }
 

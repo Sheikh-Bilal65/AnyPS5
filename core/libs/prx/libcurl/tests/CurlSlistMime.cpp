@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <initializer_list>
 #include <source_location>
+#include <stdexcept>
 
 static void Require(bool condition, std::source_location location = std::source_location::current()) {
     if (condition) return;
@@ -106,6 +107,14 @@ int main() {
             GuestFormNode("child", "child contents", nullptr, nullptr));
         curl_formfree_nid_postfix(form);
         curl_formfree_nid_postfix(nullptr);
+        curl_formfree_nid_postfix(reinterpret_cast<guest_curl_httppost*>(0xdeadbeef));
+        bool threw = false;
+        try {
+            curl_formadd_nid_postfix(reinterpret_cast<guest_curl_httppost**>(0xdeadbeef), nullptr, CURLFORM_END);
+        } catch (const std::runtime_error&) {
+            threw = true;
+        }
+        Require(threw);
     }
     CURL* easy = curl_easy_init_nid_postfix();
     Require(easy != nullptr);
