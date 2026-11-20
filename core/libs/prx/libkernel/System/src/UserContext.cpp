@@ -200,32 +200,33 @@ extern "C" {
 
 int APS5_VABI Aps5GetcontextFinish_nid_no_patch(UserUcontext* context, const RegisterFrame* frame) {
     if (context == nullptr) return Fail(GuestEinval);
+    const auto* const hostFrame = frame;
     UserUcontext captured{};
     sigprocmask_nid_postfix(GuestSigBlock, nullptr, captured.sigmask);
 
     auto& machine = captured.mcontext;
-    machine.rdi = frame->rdi;
-    machine.rsi = frame->rsi;
-    machine.rcx = frame->rcx;
-    machine.r8 = frame->r8;
-    machine.r9 = frame->r9;
-    machine.rbx = frame->rbx;
-    machine.rbp = frame->rbp;
-    machine.r10 = frame->r10;
-    machine.r11 = frame->r11;
-    machine.r12 = frame->r12;
-    machine.r13 = frame->r13;
-    machine.r14 = frame->r14;
-    machine.r15 = frame->r15;
-    machine.rip = frame->rip;
-    machine.cs = frame->cs;
-    machine.rflags = frame->rflags & ~CarryFlag;
-    machine.rsp = frame->rsp;
-    machine.ss = frame->ss;
+    machine.rdi = hostFrame->rdi;
+    machine.rsi = hostFrame->rsi;
+    machine.rcx = hostFrame->rcx;
+    machine.r8 = hostFrame->r8;
+    machine.r9 = hostFrame->r9;
+    machine.rbx = hostFrame->rbx;
+    machine.rbp = hostFrame->rbp;
+    machine.r10 = hostFrame->r10;
+    machine.r11 = hostFrame->r11;
+    machine.r12 = hostFrame->r12;
+    machine.r13 = hostFrame->r13;
+    machine.r14 = hostFrame->r14;
+    machine.r15 = hostFrame->r15;
+    machine.rip = hostFrame->rip;
+    machine.cs = hostFrame->cs;
+    machine.rflags = hostFrame->rflags & ~CarryFlag;
+    machine.rsp = hostFrame->rsp;
+    machine.ss = hostFrame->ss;
     machine.len = sizeof(UserMcontext);
     machine.fpformat = FpFormatXmm;
     machine.ownedfp = FpOwnedFpu;
-    std::memcpy(machine.fpstate, frame->fxsave, sizeof(frame->fxsave));
+    std::memcpy(machine.fpstate, hostFrame->fxsave, sizeof(hostFrame->fxsave));
     if (!GuestCopyOut_nid_no_patch(context, &captured, offsetof(UserUcontext, link))) return Fail(GuestEfault);
     return 0;
 }

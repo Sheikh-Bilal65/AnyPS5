@@ -409,15 +409,15 @@ std::int64_t APS5_VABI sysconf_nid_postfix(int name) {
     *__error_nid_postfix() = saved;
     return result;
 }
-int APS5_VABI sysctl_nid_postfix(const int* name, std::uint32_t nameLength, void* oldValue, std::size_t* oldLength, const void* newValue, std::size_t newLength) {
+int APS5_VABI sysctl_nid_postfix(const int* inName, std::uint32_t nameLength, void* oldValue, std::size_t* oldLength, const void* newValue, std::size_t newLength) {
     (void)newLength;
     if (nameLength < 2 || nameLength > 24) {
         *__error_nid_postfix() = 22;
         return -1;
     }
     int guestName[24];
-    if (!GuestCopyIn_nid_no_patch(guestName, name, nameLength * sizeof(int))) return Fault();
-    name = guestName;
+    if (!GuestCopyIn_nid_no_patch(guestName, inName, nameLength * sizeof(int))) return Fault();
+    const int* const name = guestName;
     std::size_t capacity = 0;
     if (oldLength != nullptr && !GuestCopyIn_nid_no_patch(&capacity, oldLength, sizeof(capacity))) return Fault();
     if (IsMeasuredAbsentMib(name, nameLength)) {
@@ -628,15 +628,14 @@ int APS5_VABI sysctl_nid_postfix(const int* name, std::uint32_t nameLength, void
     throw std::runtime_error(std::string(__func__) + ": unsupported MIB " + mib);
 }
 
-int APS5_VABI sysctlbyname_nid_postfix(const char* name, void* oldValue, std::size_t* oldLength, const void* newValue, std::size_t newLength) {
+int APS5_VABI sysctlbyname_nid_postfix(const char* inName, void* oldValue, std::size_t* oldLength, const void* newValue, std::size_t newLength) {
     std::string guestName;
-    if (const int error = CopyGuestPath_nid_no_patch(name, guestName)) {
+    if (const int error = CopyGuestPath_nid_no_patch(inName, guestName)) {
         *__error_nid_postfix() = error;
         return -1;
     }
-    name = guestName.c_str();
-    const std::string trimmed = WithoutTrailingDot(name);
-    name = trimmed.c_str();
+    const std::string trimmed = WithoutTrailingDot(guestName.c_str());
+    const char* const name = trimmed.c_str();
     if (TopLevelNode(trimmed) >= 0) {
         *__error_nid_postfix() = 22;
         return -1;
@@ -833,10 +832,10 @@ int APS5_VABI sysKernelGetIntdevModeForRcmgr_nid_postfix(void) {
     return mode;
 }
 
-int APS5_VABI sysctlnametomib_nid_postfix(const char* name, int* mib, std::size_t* size) {
+int APS5_VABI sysctlnametomib_nid_postfix(const char* inName, int* mib, std::size_t* size) {
     struct KnownName {
         const char* name;
-        int mib[3];
+        int mibValues[3];
         std::size_t length;
     };
     static constexpr KnownName known[] = {
@@ -859,15 +858,14 @@ int APS5_VABI sysctlnametomib_nid_postfix(const char* name, int* mib, std::size_
         {"kern.rng_pseudo", {1, 50}, 2},
         {"vm.loadavg", {2, 2}, 2},
     };
-    if (name == nullptr || size == nullptr) throw std::invalid_argument(std::string(__func__) + ": null name or size");
+    if (inName == nullptr || size == nullptr) throw std::invalid_argument(std::string(__func__) + ": null name or size");
     std::string guestName;
-    if (const int error = CopyGuestPath_nid_no_patch(name, guestName)) {
+    if (const int error = CopyGuestPath_nid_no_patch(inName, guestName)) {
         *__error_nid_postfix() = error;
         return -1;
     }
-    name = guestName.c_str();
-    const std::string trimmed = WithoutTrailingDot(name);
-    name = trimmed.c_str();
+    const std::string trimmed = WithoutTrailingDot(guestName.c_str());
+    const char* const name = trimmed.c_str();
     if (trimmed.empty() || std::strcmp(name, "hw.cacheline_size") == 0 || std::strcmp(name, "hw.usermem") == 0 || std::strcmp(name, "machdep.cacheline_size") == 0) {
         *__error_nid_postfix() = 2;
         return -1;
@@ -884,7 +882,7 @@ int APS5_VABI sysctlnametomib_nid_postfix(const char* name, int* mib, std::size_
     };
     if (const int node = TopLevelNode(trimmed); node >= 0) return copyMib(&node, 1);
     for (const auto& entry : known) {
-        if (std::strcmp(name, entry.name) == 0) return copyMib(entry.mib, entry.length);
+        if (std::strcmp(name, entry.name) == 0) return copyMib(entry.mibValues, entry.length);
     }
     for (const auto& entry : MeasuredAbsentNames) {
         if (std::strcmp(name, entry.name) == 0) return copyMib(entry.mib, entry.length);

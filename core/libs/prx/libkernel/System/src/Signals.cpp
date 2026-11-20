@@ -690,20 +690,21 @@ GuestHandler APS5_VABI signal_nid_postfix(int guest, GuestHandler handler) {
 }
 int APS5_VABI sigaction_nid_postfix(int guest, const GuestSigaction* action, GuestSigaction* previous) {
     GuestSigaction requested{};
+    const GuestSigaction* activeAction = nullptr;
     if (action != nullptr) {
         if (!GuestCopyIn_nid_no_patch(&requested, action, sizeof(requested))) { *__error_nid_postfix() = 14; return -1; }
-        action = &requested;
+        activeAction = &requested;
     }
     if (guest < 1 || guest > MaxSignal) { *__error_nid_postfix() = 22; return -1; }
-    if (action && action->handler > 1 && (action->flags & ~SaDefinedFlags) != 0) { *__error_nid_postfix() = 22; return -1; }
-    if (action && (guest == GuestSigkill || guest == GuestSigstop) && action->handler != 0) { *__error_nid_postfix() = 22; return -1; }
+    if (activeAction && activeAction->handler > 1 && (activeAction->flags & ~SaDefinedFlags) != 0) { *__error_nid_postfix() = 22; return -1; }
+    if (activeAction && (guest == GuestSigkill || guest == GuestSigstop) && activeAction->handler != 0) { *__error_nid_postfix() = 22; return -1; }
     std::lock_guard lock(registration);
     SettleReset(guest);
     const GuestSigaction old = dispositions[guest];
-    if (action) {
-        if (!Install(guest, *action)) { *__error_nid_postfix() = 22; return -1; }
-        dispositions[guest] = *action;
-        DiscardPendingIfIgnored(guest, *action);
+    if (activeAction) {
+        if (!Install(guest, *activeAction)) { *__error_nid_postfix() = 22; return -1; }
+        dispositions[guest] = *activeAction;
+        DiscardPendingIfIgnored(guest, *activeAction);
     }
     if (previous && !GuestCopyOut_nid_no_patch(previous, &old, sizeof(old))) { *__error_nid_postfix() = 14; return -1; }
     return 0;
@@ -764,11 +765,11 @@ int APS5_VABI sigaltstack_nid_postfix(const GuestStack* stack, GuestStack* previ
     GuestStack requested{};
     if (stack != nullptr) {
         if (!GuestCopyIn_nid_no_patch(&requested, stack, sizeof(requested))) { *__error_nid_postfix() = 14; return -1; }
-        stack = &requested;
-        if ((stack->flags & ~SsDisable) != 0) { *__error_nid_postfix() = 22; return -1; }
-        if (stack->flags & SsDisable) replacement.flags = SsDisable;
-        else if (stack->size < MinSignalStackSize) { *__error_nid_postfix() = 12; return -1; }
-        else replacement = {stack->sp, stack->size, 0};
+        const auto* const activeStack = &requested;
+        if ((activeStack->flags & ~SsDisable) != 0) { *__error_nid_postfix() = 22; return -1; }
+        if (activeStack->flags & SsDisable) replacement.flags = SsDisable;
+        else if (activeStack->size < MinSignalStackSize) { *__error_nid_postfix() = 12; return -1; }
+        else replacement = {activeStack->sp, activeStack->size, 0};
     }
     const GuestStack old = alternateStack;
     alternateStack = replacement;
