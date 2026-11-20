@@ -31,6 +31,7 @@ int main() {
     Sheet nonIsoSheet{};
     std::memset(nonIsoSheet.bytes, 0, sizeof(nonIsoSheet.bytes));
     Require(sceCesIso2022JpUcsProfileSetSbcs(nonIsoSheet.bytes, sceCesRefersUcsProfileAscii()) == invalidProfile && errno == 0x5a);
+    Require(sceCesIso2022JpUcsProfileSetSbcs(reinterpret_cast<void*>(0x10), sceCesRefersUcsProfileAscii()) == invalidProfile && errno == 0x5a);
 
     Require(sceCesIso2022JpUcsProfileSetSbcs(isoSheet.bytes, sceCesRefersUcsProfileAscii()) == 0 && errno == 0x5a);
     Require(sceCesIso2022JpUcsProfileSetSbcs(isoSheet.bytes, sceCesRefersUcsProfileJisX0201Roman()) == 0 && errno == 0x5a);
@@ -42,6 +43,8 @@ int main() {
     Require(sceCesUcsProfileInitGb18030_2022(nullptr) == nullptr && errno == 0x5a);
     Require(sceCesUcsProfileInitGb18030_2022(gbSheet.bytes) == gbSheet.bytes && errno == 0x5a);
     Require(sceCesGbUcsProfileSet4ByteCharRange(nullptr, 1) == invalidProfile && errno == 0x5a);
+    Require(sceCesGbUcsProfileSet4ByteCharRange(reinterpret_cast<void*>(0x10), 1) == invalidProfile && errno == 0x5a);
+    Require(sceCesGbUcsProfileSetUdaMapping(reinterpret_cast<void*>(0x10), 1) == invalidProfile && errno == 0x5a);
     Require(sceCesGbUcsProfileSet4ByteCharRange(gbSheet.bytes, 1) == 0 && errno == 0x5a);
     Require(sceCesGbUcsProfileSetSbcs(nullptr, sceCesRefersUcsProfileGbT1988()) == invalidProfile && errno == 0x5a);
     Require(sceCesGbUcsProfileSetSbcs(gbSheet.bytes, nullptr) == invalidProfile && errno == 0x5a);

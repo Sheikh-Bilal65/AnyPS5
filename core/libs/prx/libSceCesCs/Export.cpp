@@ -2316,7 +2316,10 @@ int APS5_VABI sceCesIso2022JpUcsProfileSetSbcs(void* p, const void* sbcs) {
         errno = savedErrno;
         return CES_ERROR_INVALID_PROFILE;
     }
-    static_cast<uint8_t*>(p)[8] = index;
+    if (!CesGuest::Store(static_cast<uint8_t*>(p) + 8, index)) {
+        errno = savedErrno;
+        return CES_ERROR_INVALID_PROFILE;
+    }
     errno = savedErrno;
     return 0;
 }
@@ -2887,7 +2890,7 @@ int APS5_VABI sceCesGbUcsProfileSet4ByteCharRange(void* profile, int range) {
     if (!profile || isEucCn(profile) || isGbk(profile)) return CES_ERROR_INVALID_PROFILE;
     if (!isGb18030(profile)) throw std::runtime_error("sceCesGbUcsProfileSet4ByteCharRange: a profile other than the GB 18030, GBK and EUC-CN ones is not implemented");
     if (!gb18030Range(range)) return CES_ERROR_INVALID_PARAMETER;
-    static_cast<uint8_t*>(profile)[GB_RANGE_BYTE] = static_cast<uint8_t>(range);
+    if (!CesGuest::Store(static_cast<uint8_t*>(profile) + GB_RANGE_BYTE, static_cast<uint8_t>(range))) return CES_ERROR_INVALID_PROFILE;
     return 0;
 }
 
@@ -2895,7 +2898,7 @@ int APS5_VABI sceCesGbUcsProfileSetUdaMapping(void* profile, int udaMapping) {
     if (!profile || isEucCn(profile)) return CES_ERROR_INVALID_PROFILE;
     if (!isGb(profile)) throw std::runtime_error("sceCesGbUcsProfileSetUdaMapping: a profile other than the GB 18030, GBK and EUC-CN ones is not implemented");
     if (udaMapping != 0 && udaMapping != 1) return CES_ERROR_INVALID_PARAMETER;
-    static_cast<uint8_t*>(profile)[GB_UDA_BYTE] = static_cast<uint8_t>(udaMapping);
+    if (!CesGuest::Store(static_cast<uint8_t*>(profile) + GB_UDA_BYTE, static_cast<uint8_t>(udaMapping))) return CES_ERROR_INVALID_PROFILE;
     return 0;
 }
 
