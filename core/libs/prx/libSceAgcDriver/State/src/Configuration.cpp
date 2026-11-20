@@ -38,26 +38,30 @@ int APS5_VABI sceAgcDriverSetHsOffchipParam(uint16_t granularity, uint16_t buffe
 }
 
 int APS5_VABI sceAgcDriverGetHsOffchipParam(uint16_t* granularity, uint16_t* buffering) {
- if (granularity == nullptr || buffering == nullptr) throw std::invalid_argument("sceAgcDriverGetHsOffchipParam: null output");
- std::lock_guard lock(hsOffchipParamMutex);
- *granularity = hsOffchipParam.granularity;
- *buffering = hsOffchipParam.buffering;
- return 0;
+    if (granularity == nullptr || buffering == nullptr) throw std::invalid_argument("sceAgcDriverGetHsOffchipParam: null output");
+    auto* const gran = granularity;
+    auto* const buff = buffering;
+    std::lock_guard lock(hsOffchipParamMutex);
+    *gran = hsOffchipParam.granularity;
+    *buff = hsOffchipParam.buffering;
+    return 0;
 }
 
 int APS5_VABI sceAgcDriverSetTFRing(const volatile void* base, uint32_t size) {
- if (base == nullptr || size == 0) throw std::invalid_argument("sceAgcDriverSetTFRing: empty ring");
- std::lock_guard lock(tessellationFactorRingMutex);
- tessellationFactorRing = {reinterpret_cast<uintptr_t>(base), size};
- return 0;
+    if (base == nullptr || size == 0) throw std::invalid_argument("sceAgcDriverSetTFRing: empty ring");
+    std::lock_guard lock(tessellationFactorRingMutex);
+    tessellationFactorRing = {reinterpret_cast<uintptr_t>(base), size};
+    return 0;
 }
 
 int APS5_VABI sceAgcDriverGetTFRing(uintptr_t* base, uint32_t* size) {
- if (base == nullptr || size == nullptr) throw std::invalid_argument("sceAgcDriverGetTFRing: null output");
- std::lock_guard lock(tessellationFactorRingMutex);
- *base = tessellationFactorRing.base;
- *size = tessellationFactorRing.size;
- return 0;
+    if (base == nullptr || size == nullptr) throw std::invalid_argument("sceAgcDriverGetTFRing: null output");
+    auto* const b = base;
+    auto* const s = size;
+    std::lock_guard lock(tessellationFactorRingMutex);
+    *b = tessellationFactorRing.base;
+    *s = tessellationFactorRing.size;
+    return 0;
 }
 
 }

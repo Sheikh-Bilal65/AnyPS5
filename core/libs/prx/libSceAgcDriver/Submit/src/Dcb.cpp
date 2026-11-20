@@ -142,11 +142,12 @@ std::uint32_t APS5_VABI sceAgcDriverWaitUntilSafeForRendering(std::uint32_t** co
     std::uint32_t capacity, std::uint32_t mode, std::uint32_t handle, int index) {
     if (!command || capacity < AgcDriver::RenderingWaitPacketWords || mode != 0 || index < 0)
         throw std::invalid_argument("AGC driver: invalid rendering wait arguments");
-    AgcDriver::GuestMemory::CheckRange(command, sizeof(*command), alignof(std::uint32_t*), true);
-    AgcDriver::GuestMemory::CheckRange(*command, AgcDriver::RenderingWaitPacketWords * sizeof(std::uint32_t), alignof(std::uint32_t), true);
+    auto** const cmd = command;
+    AgcDriver::GuestMemory::CheckRange(cmd, sizeof(*cmd), alignof(std::uint32_t*), true);
+    AgcDriver::GuestMemory::CheckRange(*cmd, AgcDriver::RenderingWaitPacketWords * sizeof(std::uint32_t), alignof(std::uint32_t), true);
     const std::uint32_t words[] = {AgcDriver::RenderingWaitPacketHeader, handle, static_cast<std::uint32_t>(index), mode};
-    std::copy(std::begin(words), std::end(words), *command);
-    *command += AgcDriver::RenderingWaitPacketWords;
+    std::copy(std::begin(words), std::end(words), *cmd);
+    *cmd += AgcDriver::RenderingWaitPacketWords;
     return 0;
 }
 
