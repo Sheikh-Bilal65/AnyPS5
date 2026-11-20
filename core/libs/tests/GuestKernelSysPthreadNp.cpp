@@ -231,6 +231,7 @@ void TestAttr() {
         KernelCpumask mask = 0x3;
         int solosched = -1;
         errno = 71;
+        if (pthread_attr_setstackaddr_nid_postfix(unmappedAttr, reinterpret_cast<void*>(0x1000)) != GUEST_EINVAL) return false;
         if (pthread_attr_getaffinity_np_nid_postfix(unmappedAttr, sizeof(mask), &mask) != GUEST_EINVAL) return false;
         if (pthread_attr_setaffinity_np_nid_postfix(unmappedAttr, sizeof(mask), &mask) != GUEST_EINVAL) return false;
         if (pthread_attr_getsolosched_np_nid_postfix(unmappedAttr, &solosched) != GUEST_EINVAL || solosched != -1) return false;
@@ -263,6 +264,7 @@ void TestAttr() {
             if (pthread_get_specificarray_np_nid_postfix(key, IntMax, nullptr) != GUEST_EINVAL) return false;
         }
         if (pthread_get_specificarray_np_nid_postfix(1, 1, nullptr) != GUEST_EFAULT) return false;
+        if (pthread_get_specificarray_np_nid_postfix(1, 1, reinterpret_cast<void**>(0x10)) != GUEST_EFAULT) return false;
         PthreadKey key1 = 0;
         PthreadKey key2 = 0;
         std::vector<PthreadKey> createdKeys;

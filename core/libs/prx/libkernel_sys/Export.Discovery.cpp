@@ -22,6 +22,7 @@
 #include <cstring>
 #include <initializer_list>
 #include <optional>
+#include <vector>
 
 namespace {
 
@@ -269,8 +270,9 @@ int APS5_VABI pthread_attr_setcreatesuspend_np_nid_postfix(PthreadAttr* attr) {
 
 int APS5_VABI pthread_attr_setstackaddr_nid_postfix(PthreadAttr* attr, void* stack_addr) {
     constexpr int GuestEinval = 22;
-    if (!attr || !*attr || !stack_addr) return GuestEinval;
-    (*attr)->stackAddress = stack_addr;
+    PthreadAttr localAttr = nullptr;
+    if (!attr || !GuestCopyIn_nid_no_patch(&localAttr, attr, sizeof(localAttr)) || !localAttr || !stack_addr) return GuestEinval;
+    localAttr->stackAddress = stack_addr;
     return 0;
 }
 
@@ -280,9 +282,16 @@ int APS5_VABI pthread_get_specificarray_np_nid_postfix(PthreadKey key, int total
     constexpr int MaxKeys = 512;
     if (total <= 0 || key < 1 || key > MaxKeys || total > MaxKeys - (key - 1)) return GuestEinval;
     if (!array) return GuestEfault;
+    std::vector<void*> values(total);
     for (int i = 0; i < total; ++i) {
-        array[i] = scePthreadGetspecific(key + i);
+        values[i] = scePthreadGetspecific(key + i);
     }
+    const int savedErrno = errno;
+    if (!GuestCopyOut_nid_no_patch(array, values.data(), total * sizeof(void*))) {
+        errno = savedErrno;
+        return GuestEfault;
+    }
+    errno = savedErrno;
     return 0;
 }
 
