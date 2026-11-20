@@ -116,9 +116,11 @@ void SlotDone(GuestGlyphSlotRec* slot, const char* function) {
 extern "C" {
 
 int APS5_VABI FT_New_GlyphSlot_nid_postfix(GuestFaceRec* face, GuestGlyphSlotRec** aslot) {
+    auto* const guestFace = face;
+    auto** const outSlot = aslot;
     const char* function = __func__;
-    if (!face || !face->driver) return InvalidArgument;
-    auto* driver = static_cast<GuestDriverRec*>(face->driver);
+    if (!guestFace || !guestFace->driver) return InvalidArgument;
+    auto* driver = static_cast<GuestDriverRec*>(guestFace->driver);
     if (!driver->clazz) NotImplementedAt_nid_no_patch(function, __FILE__, __LINE__);
     GuestMemoryRec* memory = driver->root_memory;
     const std::int64_t size = driver->clazz->slot_object_size;
@@ -126,7 +128,7 @@ int APS5_VABI FT_New_GlyphSlot_nid_postfix(GuestFaceRec* face, GuestGlyphSlotRec
     std::int32_t error = 0;
     auto* slot = static_cast<GuestGlyphSlotRec*>(Allocate(memory, size, &error, function));
     if (error) {
-        if (aslot) *aslot = nullptr;
+        if (outSlot) *outSlot = nullptr;
         return error;
     }
     slot->face = face;
@@ -136,9 +138,9 @@ int APS5_VABI FT_New_GlyphSlot_nid_postfix(GuestFaceRec* face, GuestGlyphSlotRec
         Free(memory, slot, function);
         return error;
     }
-    slot->next = face->glyph;
-    face->glyph = slot;
-    if (aslot) *aslot = slot;
+    slot->next = guestFace->glyph;
+    guestFace->glyph = slot;
+    if (outSlot) *outSlot = slot;
     return 0;
 }
 
@@ -147,24 +149,26 @@ void APS5_VABI ft_glyphslot_free_bitmap_nid_postfix(GuestGlyphSlotRec* slot) {
 }
 
 void APS5_VABI ft_glyphslot_set_bitmap_nid_postfix(GuestGlyphSlotRec* slot, std::uint8_t* buffer) {
-    FreeBitmap(slot, __func__);
-    slot->bitmap.buffer = buffer;
+    auto* const glyphSlot = slot;
+    FreeBitmap(glyphSlot, __func__);
+    glyphSlot->bitmap.buffer = buffer;
 }
 
 int APS5_VABI ft_glyphslot_alloc_bitmap_nid_postfix(GuestGlyphSlotRec* slot, std::uint64_t size) {
+    auto* const glyphSlot = slot;
     const char* function = __func__;
-    if (!slot || !slot->internal) NotImplemented_nid_no_patch(function);
-    GuestMemoryRec* memory = FaceMemory(slot, function);
-    GuestSlotInternalRec* internal = Internal(slot);
+    if (!glyphSlot || !glyphSlot->internal) NotImplemented_nid_no_patch(function);
+    GuestMemoryRec* memory = FaceMemory(glyphSlot, function);
+    GuestSlotInternalRec* internal = Internal(glyphSlot);
     if (internal->flags & GlyphOwnBitmap) {
-        FreeOwned(memory, slot, function);
+        FreeOwned(memory, glyphSlot, function);
     } else {
         internal->flags |= GlyphOwnBitmap;
     }
     const auto bytes = static_cast<std::int64_t>(size);
     if (bytes > 0 && !memory) NotImplemented_nid_no_patch(function);
     std::int32_t error = 0;
-    slot->bitmap.buffer = static_cast<unsigned char*>(OtMemAlloc(memory, bytes, &error));
+    glyphSlot->bitmap.buffer = static_cast<unsigned char*>(OtMemAlloc(memory, bytes, &error));
     return error;
 }
 

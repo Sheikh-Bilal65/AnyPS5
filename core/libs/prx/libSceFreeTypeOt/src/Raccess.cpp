@@ -193,8 +193,9 @@ int APS5_VABI FT_Raccess_Get_HeaderInfo_nid_postfix(GuestRaccessLibrary*, GuestS
     const std::int64_t dataStart = Add(rforkOffset, Field(head, 0, function), function);
     const std::int64_t mapPos = Add(rforkOffset, Field(head, 4, function), function);
     const std::int64_t dataLength = Field(head, 8, function);
-    if (!rdataPos) NotImplemented_nid_no_patch(function);
-    *rdataPos = dataStart;
+    auto* const outRdataPos = rdataPos;
+    if (!outRdataPos) NotImplemented_nid_no_patch(function);
+    *outRdataPos = dataStart;
     if (Add(dataStart, dataLength, function) != mapPos || mapPos == rforkOffset) return UnknownFileFormat;
     error = FT_Stream_Seek_nid_postfix(stream, static_cast<std::uint64_t>(mapPos));
     if (error) return error;
@@ -213,16 +214,20 @@ int APS5_VABI FT_Raccess_Get_HeaderInfo_nid_postfix(GuestRaccessLibrary*, GuestS
     if (error) return error;
     error = FT_Stream_Seek_nid_postfix(stream, static_cast<std::uint64_t>(Add(mapPos, typeList, function)));
     if (error) return error;
-    if (!mapOffset) NotImplemented_nid_no_patch(function);
-    *mapOffset = mapPos + typeList;
+    auto* const outMapOffset = mapOffset;
+    if (!outMapOffset) NotImplemented_nid_no_patch(function);
+    *outMapOffset = mapPos + typeList;
     return 0;
 }
 
 int APS5_VABI FT_Raccess_Get_DataOffsets_nid_postfix(GuestRaccessLibrary* library, GuestStreamRec* stream, std::int64_t mapOffset,
                                                      std::int64_t rdataPos, std::int64_t tag, std::int64_t** offsets, std::int64_t* count) {
     const char* function = __func__;
-    if (!library) NotImplemented_nid_no_patch(function);
-    GuestMemoryRec* memory = library->memory;
+    auto* const lib = library;
+    auto** const outOffsets = offsets;
+    auto* const outCount = count;
+    if (!lib) NotImplemented_nid_no_patch(function);
+    GuestMemoryRec* memory = lib->memory;
     int error = FT_Stream_Seek_nid_postfix(stream, static_cast<std::uint64_t>(mapOffset));
     if (error) return error;
     const int types = FT_Stream_ReadUShort_nid_postfix(stream, &error) + 1;
@@ -235,9 +240,9 @@ int APS5_VABI FT_Raccess_Get_DataOffsets_nid_postfix(GuestRaccessLibrary* librar
         const std::int64_t refList = FT_Stream_ReadUShort_nid_postfix(stream, &error);
         if (error) return error;
         if (typeTag != tag) continue;
-        if (!count) NotImplemented_nid_no_patch(function);
+        if (!outCount) NotImplemented_nid_no_patch(function);
         const std::int64_t refs = subCount + 1;
-        *count = refs;
+        *outCount = refs;
         error = FT_Stream_Seek_nid_postfix(stream, static_cast<std::uint64_t>(Add(refList, mapOffset, function)));
         if (error) return error;
         if (!memory) NotImplemented_nid_no_patch(function);
@@ -267,8 +272,8 @@ int APS5_VABI FT_Raccess_Get_DataOffsets_nid_postfix(GuestRaccessLibrary* librar
             for (std::int64_t index = 0; index < refs; ++index) {
                 result[index] = Add(rdataPos, static_cast<std::int64_t>(ref[index].offset), function);
             }
-            if (!offsets) NotImplemented_nid_no_patch(function);
-            *offsets = result;
+            if (!outOffsets) NotImplemented_nid_no_patch(function);
+            *outOffsets = result;
         }
         OtMemFree(memory, ref);
         return error;
@@ -278,12 +283,16 @@ int APS5_VABI FT_Raccess_Get_DataOffsets_nid_postfix(GuestRaccessLibrary* librar
 
 void APS5_VABI FT_Raccess_Guess_nid_postfix(GuestRaccessLibrary* library, GuestStreamRec* stream, char* baseName, char** newNames,
                                            std::int64_t* offsets, std::int32_t* errors) {
-    if (!library || !library->memory || !baseName || !newNames || !offsets || !errors) NotImplemented_nid_no_patch(__func__);
+    auto* const lib = library;
+    auto** const names = newNames;
+    auto* const offs = offsets;
+    auto* const errs = errors;
+    if (!lib || !lib->memory || !baseName || !names || !offs || !errs) NotImplemented_nid_no_patch(__func__);
     for (int rule = 0; rule < RuleCount; ++rule) {
-        newNames[rule] = nullptr;
-        errors[rule] = stream ? FT_Stream_Seek_nid_postfix(stream, 0) : 0;
-        if (errors[rule]) continue;
-        errors[rule] = GuessRule(rule, library, stream, baseName, &newNames[rule], &offsets[rule]);
+        names[rule] = nullptr;
+        errs[rule] = stream ? FT_Stream_Seek_nid_postfix(stream, 0) : 0;
+        if (errs[rule]) continue;
+        errs[rule] = GuessRule(rule, lib, stream, baseName, &names[rule], &offs[rule]);
     }
 }
 

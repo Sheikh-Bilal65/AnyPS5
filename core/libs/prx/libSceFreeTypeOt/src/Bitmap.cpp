@@ -48,15 +48,16 @@ std::int32_t CopyBitmap(GuestBitmapLibrary* library, const GuestBitmap* source, 
 extern "C" {
 
 int APS5_VABI sceFreeTypeOtGlyphSlotOwnBitmap_nid_no_patch(GuestGlyphSlotRec* slot) {
+    auto* const glyphSlot = slot;
     const char* function = __func__;
-    if (!slot || slot->format != GlyphFormatBitmap) return 0;
-    auto* internal = static_cast<GuestSlotInternalRec*>(slot->internal);
+    if (!glyphSlot || glyphSlot->format != GlyphFormatBitmap) return 0;
+    auto* internal = static_cast<GuestSlotInternalRec*>(glyphSlot->internal);
     if (!internal) NotImplemented_nid_no_patch(function);
     if (internal->flags & GlyphOwnBitmap) return 0;
     GuestBitmap bitmap{};
-    const std::int32_t error = CopyBitmap(static_cast<GuestBitmapLibrary*>(slot->library), &slot->bitmap, &bitmap, function);
+    const std::int32_t error = CopyBitmap(static_cast<GuestBitmapLibrary*>(glyphSlot->library), &glyphSlot->bitmap, &bitmap, function);
     if (error) return error;
-    slot->bitmap = bitmap;
+    glyphSlot->bitmap = bitmap;
     internal->flags |= GlyphOwnBitmap;
     return 0;
 }

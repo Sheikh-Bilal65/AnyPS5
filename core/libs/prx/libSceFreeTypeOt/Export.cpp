@@ -191,11 +191,13 @@ int APS5_VABI sceFreeTypeOtUnknown_qAPXM5DN62Q_nid_no_patch() {
 APS5_EXPORT("qAPXM5DN62Q", sceFreeTypeOtUnknown_qAPXM5DN62Q_nid_no_patch);
 
 int APS5_VABI FT_Render_Glyph_Internal_nid_postfix(FreeType::GuestLibrary* library, FreeType::GuestGlyphSlotRec* slot, std::int32_t renderMode) {
-    if (!library || !slot || !slot->face || slot->library != library) NotImplemented_nid_no_patch(__func__);
+    auto* const lib = library;
+    auto* const glyphSlot = slot;
+    if (!lib || !glyphSlot || !glyphSlot->face || glyphSlot->library != lib) NotImplemented_nid_no_patch(__func__);
     bool owned = false;
-    for (const auto& face : library->faces) owned = owned || &face->slot == slot;
+    for (const auto& face : lib->faces) owned = owned || &face->slot == glyphSlot;
     if (!owned) NotImplemented_nid_no_patch(__func__);
-    return FT_Render_Glyph_nid_postfix(slot, renderMode);
+    return FT_Render_Glyph_nid_postfix(glyphSlot, renderMode);
 }
 
 int APS5_VABI FT_Set_Debug_Hook_nid_postfix() {
@@ -314,15 +316,17 @@ void APS5_VABI FT_Matrix_Multiply_Scaled_nid_postfix(const FreeType::GuestMatrix
 }
 
 void APS5_VABI FT_Vector_Transform_Scaled_nid_postfix(FreeType::GuestVector* vector, const FreeType::GuestMatrix* matrix, std::int64_t scaling) {
+    auto* const vec = vector;
+    const auto* const mat = matrix;
     const std::int64_t divisor = ScaledDivisor(scaling, __func__);
-    if (!vector || !matrix) {
+    if (!vec || !mat) {
         return;
     }
     const FreeType::GuestVector transformed{
-        ScaledSum(vector->x, matrix->xx, vector->y, matrix->xy, divisor, __func__),
-        ScaledSum(vector->x, matrix->yx, vector->y, matrix->yy, divisor, __func__),
+        ScaledSum(vec->x, mat->xx, vec->y, mat->xy, divisor, __func__),
+        ScaledSum(vec->x, mat->yx, vec->y, mat->yy, divisor, __func__),
     };
-    *vector = transformed;
+    *vec = transformed;
 }
 
 std::int32_t APS5_VABI FT_SqrtFixed_nid_postfix(std::int32_t x) {
@@ -338,30 +342,33 @@ std::uint32_t APS5_VABI ft_highpow2_nid_postfix(std::uint32_t value) {
 }
 
 void APS5_VABI ft_synthesize_vertical_metrics_nid_postfix(FreeType::GuestGlyphMetrics* metrics, std::int64_t advance) {
-    if (!metrics) {
+    auto* const m = metrics;
+    if (!m) {
         return;
     }
-    std::int64_t height = metrics->height;
-    if (metrics->horiBearingY < 0) {
-        if (height < metrics->horiBearingY) {
-            height = metrics->horiBearingY;
+    std::int64_t height = m->height;
+    if (m->horiBearingY < 0) {
+        if (height < m->horiBearingY) {
+            height = m->horiBearingY;
         }
-    } else if (metrics->horiBearingY > 0) {
-        height -= metrics->horiBearingY;
+    } else if (m->horiBearingY > 0) {
+        height -= m->horiBearingY;
     }
     if (!advance) {
         advance = height * 12 / 10;
     }
-    metrics->vertBearingX = metrics->horiBearingX - metrics->horiAdvance / 2;
-    metrics->vertBearingY = (advance - height) / 2;
-    metrics->vertAdvance = advance;
+    m->vertBearingX = m->horiBearingX - m->horiAdvance / 2;
+    m->vertBearingY = (advance - height) / 2;
+    m->vertAdvance = advance;
 }
 
 void* APS5_VABI ft_service_list_lookup_nid_postfix(const GuestServiceDesc* descriptors, const char* service_id) {
-    if (descriptors && service_id) {
-        for (; descriptors->serv_id; ++descriptors) {
-            if (std::strcmp(descriptors->serv_id, service_id) == 0) {
-                return descriptors->serv_data;
+    const auto* desc = descriptors;
+    const auto* const sid = service_id;
+    if (desc && sid) {
+        for (; desc->serv_id; ++desc) {
+            if (std::strcmp(desc->serv_id, sid) == 0) {
+                return desc->serv_data;
             }
         }
     }
