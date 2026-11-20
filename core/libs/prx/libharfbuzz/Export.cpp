@@ -1,4 +1,5 @@
 #include <cerrno>
+#include <cstddef>
 #include <cstdint>
 #include <type_traits>
 #include "prx/libSceFreeType/include/GuestObjects.hpp"
@@ -60,12 +61,13 @@ hb_face_t* APS5_VABI hb_ft_face_create_cached_nid_postfix(FreeType::GuestFaceRec
 
     auto generic = guestFace.generic;
     if (!generic.data || generic.finalizer != FinalizeCachedFace) {
-        if (!GuestWritablePreservingErrno(&face->generic, sizeof(face->generic))) {
+        auto* const genericDst = reinterpret_cast<FreeType::GuestGeneric*>(reinterpret_cast<std::uintptr_t>(face) + offsetof(FreeType::GuestFaceRec, generic));
+        if (!GuestWritablePreservingErrno(genericDst, sizeof(*genericDst))) {
             NotImplemented_nid_no_patch(__func__);
         }
         if (generic.finalizer) generic.finalizer(face);
         generic = {hb_ft_face_create(host, nullptr), FinalizeCachedFace};
-        if (!GuestCopyOutPreservingErrno(&face->generic, generic)) {
+        if (!GuestCopyOutPreservingErrno(genericDst, generic)) {
             hb_face_destroy(static_cast<hb_face_t*>(generic.data));
             NotImplemented_nid_no_patch(__func__);
         }
