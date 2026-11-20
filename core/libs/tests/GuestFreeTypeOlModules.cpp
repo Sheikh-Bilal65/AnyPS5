@@ -95,6 +95,20 @@ static void TestModuleWrapperGuestPointers() {
     REQUIRE(errno == 71);
     REQUIRE(writableBlock == nullptr);
     REQUIRE(gCountingFreeCalls == 1);
+
+    errno = 71;
+    REQUIRE(sceFreeTypeOlAlloc_nid_postfix(unmappedMemory, 24, &writableBlock) == 6);
+    REQUIRE(errno == 71);
+
+    errno = 71;
+    REQUIRE(sceFreeTypeOlAlloc_nid_postfix(const_cast<GuestMemoryRec*>(&memoryWithFree), 24, unmappedBlockPtr) == 6);
+    REQUIRE(errno == 71);
+
+    errno = 71;
+    REQUIRE(sceFreeTypeOlAlloc_nid_postfix(
+        const_cast<GuestMemoryRec*>(&memoryWithFree), 24,
+        const_cast<void**>(&readOnlyBlock)) == 6);
+    REQUIRE(errno == 71);
 }
 
 int main() {

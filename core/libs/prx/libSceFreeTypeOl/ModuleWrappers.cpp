@@ -466,11 +466,22 @@ APS5_EXPORT("OmxJF0FvwWc", sceFreeTypeOlFtaRemoveModuleWinfonts_nid_postfix);
 
 
 int APS5_VABI sceFreeTypeOlAlloc_nid_postfix(GuestMemoryRec* memory, std::int64_t size, void** output) {
-    if (output) *output = nullptr;
-    if (!memory || !memory->alloc || !output || size < 0) return 6;
+    if (!output) return 6;
+    const int savedErrno = errno;
+    void* nullPtr = nullptr;
+    const bool cleared = GuestCopyOut_nid_no_patch(output, &nullPtr, sizeof(nullPtr));
+    errno = savedErrno;
+    if (!cleared || !memory || size < 0) return 6;
+    GuestMemoryRec guestMemory{};
+    const bool copiedMemory = GuestCopyIn_nid_no_patch(&guestMemory, memory, sizeof(guestMemory));
+    errno = savedErrno;
+    if (!copiedMemory || !guestMemory.alloc) return 6;
     if (size == 0) return 0;
-    *output = memory->alloc(memory, size);
-    return *output ? 0 : 64;
+    void* allocated = guestMemory.alloc(memory, size);
+    const bool copiedAlloc = GuestCopyOut_nid_no_patch(output, &allocated, sizeof(allocated));
+    errno = savedErrno;
+    if (!copiedAlloc) return 6;
+    return allocated ? 0 : 64;
 }
 APS5_EXPORT("Uw+BZJpflxk", sceFreeTypeOlAlloc_nid_postfix);
 
