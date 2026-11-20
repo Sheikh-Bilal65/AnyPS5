@@ -424,44 +424,47 @@ void APS5_VABI sceUsbdFreeTransfer(UsbdTransfer* transfer) {
 
 void APS5_VABI sceUsbdFillInterruptTransfer(UsbdTransfer* transfer, void* deviceHandle, std::uint8_t endpoint, std::uint8_t* buffer, std::int32_t length, UsbdTransferCallback callback, void* userData, std::uint32_t timeout) {
     if (transfer == nullptr) throw std::runtime_error(std::string(__func__) + ": null transfer");
-    transfer->deviceHandle = deviceHandle;
-    transfer->endpoint = endpoint;
-    transfer->type = TRANSFER_TYPE_INTERRUPT;
-    transfer->timeout = timeout;
-    transfer->buffer = buffer;
-    transfer->length = length;
-    transfer->userData = userData;
-    transfer->callback = callback;
+    auto* const usbdTransfer = transfer;
+    usbdTransfer->deviceHandle = deviceHandle;
+    usbdTransfer->endpoint = endpoint;
+    usbdTransfer->type = TRANSFER_TYPE_INTERRUPT;
+    usbdTransfer->timeout = timeout;
+    usbdTransfer->buffer = buffer;
+    usbdTransfer->length = length;
+    usbdTransfer->userData = userData;
+    usbdTransfer->callback = callback;
 }
 
 void APS5_VABI sceUsbdFillBulkTransfer(UsbdTransfer* transfer, void* deviceHandle, std::uint8_t endpoint, std::uint8_t* buffer, std::int32_t length, UsbdTransferCallback callback, void* userData, std::uint32_t timeout) {
     if (transfer == nullptr) throw std::runtime_error(std::string(__func__) + ": null transfer");
-    transfer->deviceHandle = deviceHandle;
-    transfer->endpoint = endpoint;
-    transfer->type = TRANSFER_TYPE_BULK;
-    transfer->timeout = timeout;
-    transfer->buffer = buffer;
-    transfer->length = length;
-    transfer->userData = userData;
-    transfer->callback = callback;
+    auto* const usbdTransfer = transfer;
+    usbdTransfer->deviceHandle = deviceHandle;
+    usbdTransfer->endpoint = endpoint;
+    usbdTransfer->type = TRANSFER_TYPE_BULK;
+    usbdTransfer->timeout = timeout;
+    usbdTransfer->buffer = buffer;
+    usbdTransfer->length = length;
+    usbdTransfer->userData = userData;
+    usbdTransfer->callback = callback;
 }
 
 void APS5_VABI sceUsbdFillIsoTransfer(UsbdTransfer* transfer, void* deviceHandle, std::uint8_t endpoint, std::uint8_t* buffer, std::int32_t length, std::int32_t numIsoPackets, UsbdTransferCallback callback, void* userData, std::uint32_t timeout) {
     if (transfer == nullptr) throw std::runtime_error(std::string(__func__) + ": null transfer");
+    auto* const usbdTransfer = transfer;
     {
         auto& state = State();
         std::lock_guard lock(state.mutex);
-        if (numIsoPackets > IsoCapacity(state, transfer)) throw std::runtime_error(std::string(__func__) + ": the iso packet count is larger than the transfer was allocated for");
+        if (numIsoPackets > IsoCapacity(state, usbdTransfer)) throw std::runtime_error(std::string(__func__) + ": the iso packet count is larger than the transfer was allocated for");
     }
-    transfer->deviceHandle = deviceHandle;
-    transfer->endpoint = endpoint;
-    transfer->type = TRANSFER_TYPE_ISOCHRONOUS;
-    transfer->timeout = timeout;
-    transfer->buffer = buffer;
-    transfer->length = length;
-    transfer->numIsoPackets = numIsoPackets;
-    transfer->userData = userData;
-    transfer->callback = callback;
+    usbdTransfer->deviceHandle = deviceHandle;
+    usbdTransfer->endpoint = endpoint;
+    usbdTransfer->type = TRANSFER_TYPE_ISOCHRONOUS;
+    usbdTransfer->timeout = timeout;
+    usbdTransfer->buffer = buffer;
+    usbdTransfer->length = length;
+    usbdTransfer->numIsoPackets = numIsoPackets;
+    usbdTransfer->userData = userData;
+    usbdTransfer->callback = callback;
 }
 
 void APS5_VABI sceUsbdFillControlSetup(std::uint8_t* buffer, std::uint8_t requestType, std::uint8_t request, std::uint16_t value, std::uint16_t index, std::uint16_t length) {
@@ -473,51 +476,56 @@ void APS5_VABI sceUsbdFillControlSetup(std::uint8_t* buffer, std::uint8_t reques
 
 void APS5_VABI sceUsbdFillControlTransfer(UsbdTransfer* transfer, void* deviceHandle, std::uint8_t* buffer, UsbdTransferCallback callback, void* userData, std::uint32_t timeout) {
     if (transfer == nullptr) throw std::runtime_error(std::string(__func__) + ": null transfer");
+    auto* const usbdTransfer = transfer;
     std::uint8_t dataLength[2] = {};
     if (buffer != nullptr && !GuestCopyIn_nid_no_patch(dataLength, buffer + 6, sizeof(dataLength))) throw std::runtime_error(std::string(__func__) + ": unreadable setup");
-    transfer->deviceHandle = deviceHandle;
-    transfer->endpoint = 0;
-    transfer->type = TRANSFER_TYPE_CONTROL;
-    transfer->timeout = timeout;
-    transfer->buffer = buffer;
-    transfer->length = buffer != nullptr ? CONTROL_SETUP_SIZE + (dataLength[0] | dataLength[1] << 8) : 0;
-    transfer->userData = userData;
-    transfer->callback = callback;
+    usbdTransfer->deviceHandle = deviceHandle;
+    usbdTransfer->endpoint = 0;
+    usbdTransfer->type = TRANSFER_TYPE_CONTROL;
+    usbdTransfer->timeout = timeout;
+    usbdTransfer->buffer = buffer;
+    usbdTransfer->length = buffer != nullptr ? CONTROL_SETUP_SIZE + (dataLength[0] | dataLength[1] << 8) : 0;
+    usbdTransfer->userData = userData;
+    usbdTransfer->callback = callback;
 }
 
 std::uint8_t* APS5_VABI sceUsbdControlTransferGetData(UsbdTransfer* transfer) {
     if (transfer == nullptr) throw std::runtime_error(std::string(__func__) + ": null transfer");
-    return transfer->buffer != nullptr ? transfer->buffer + CONTROL_SETUP_SIZE : nullptr;
+    auto* const usbdTransfer = transfer;
+    return usbdTransfer->buffer != nullptr ? usbdTransfer->buffer + CONTROL_SETUP_SIZE : nullptr;
 }
 
 std::uint8_t* APS5_VABI sceUsbdControlTransferGetSetup(UsbdTransfer* transfer) {
     if (transfer == nullptr) throw std::runtime_error(std::string(__func__) + ": null transfer");
-    return transfer->buffer;
+    auto* const usbdTransfer = transfer;
+    return usbdTransfer->buffer;
 }
 
 void APS5_VABI sceUsbdSetIsoPacketLengths(UsbdTransfer* transfer, std::uint32_t length) {
     if (transfer == nullptr) throw std::runtime_error(std::string(__func__) + ": null transfer");
+    auto* const usbdTransfer = transfer;
     {
         auto& state = State();
         std::lock_guard lock(state.mutex);
-        if (transfer->numIsoPackets > IsoCapacity(state, transfer)) throw std::runtime_error(std::string(__func__) + ": the iso packet count is larger than the transfer was allocated for");
+        if (usbdTransfer->numIsoPackets > IsoCapacity(state, usbdTransfer)) throw std::runtime_error(std::string(__func__) + ": the iso packet count is larger than the transfer was allocated for");
     }
-    for (std::int32_t packet = 0; packet < transfer->numIsoPackets; ++packet) transfer->isoPacketDescriptors[packet].length = length;
+    for (std::int32_t packet = 0; packet < usbdTransfer->numIsoPackets; ++packet) usbdTransfer->isoPacketDescriptors[packet].length = length;
 }
 
 std::uint8_t* APS5_VABI sceUsbdGetIsoPacketBuffer(UsbdTransfer* transfer, std::uint32_t packet) {
     if (transfer == nullptr) throw std::runtime_error(std::string(__func__) + ": null transfer");
+    auto* const usbdTransfer = transfer;
     std::int32_t capacity = 0;
     {
         auto& state = State();
         std::lock_guard lock(state.mutex);
-        capacity = IsoCapacity(state, transfer);
+        capacity = IsoCapacity(state, usbdTransfer);
     }
-    if (transfer->numIsoPackets < 0 || transfer->numIsoPackets > capacity || packet >= static_cast<std::uint32_t>(transfer->numIsoPackets) || transfer->buffer == nullptr) return nullptr;
+    if (usbdTransfer->numIsoPackets < 0 || usbdTransfer->numIsoPackets > capacity || packet >= static_cast<std::uint32_t>(usbdTransfer->numIsoPackets) || usbdTransfer->buffer == nullptr) return nullptr;
     std::uint64_t offset = 0;
-    for (std::uint32_t index = 0; index < packet; ++index) offset += transfer->isoPacketDescriptors[index].length;
-    if (transfer->length < 0 || offset + transfer->isoPacketDescriptors[packet].length > static_cast<std::uint64_t>(transfer->length)) return nullptr;
-    return transfer->buffer + offset;
+    for (std::uint32_t index = 0; index < packet; ++index) offset += usbdTransfer->isoPacketDescriptors[index].length;
+    if (usbdTransfer->length < 0 || offset + usbdTransfer->isoPacketDescriptors[packet].length > static_cast<std::uint64_t>(usbdTransfer->length)) return nullptr;
+    return usbdTransfer->buffer + offset;
 }
 
 std::int32_t APS5_VABI sceUsbdBulkTransfer(void* deviceHandle, std::uint8_t endpoint, std::uint8_t* data, std::int32_t length, std::int32_t* transferred, std::uint32_t timeout) {
@@ -736,32 +744,34 @@ std::int32_t APS5_VABI sceUsbdSetConfiguration(void* deviceHandle, std::int32_t 
 }
 
 std::int32_t APS5_VABI sceUsbdSubmitTransfer(UsbdTransfer* transfer) {
-    if (transfer == nullptr || transfer->deviceHandle == nullptr) return SCE_USBD_ERROR_INVALID_ARG;
+    if (transfer == nullptr) return SCE_USBD_ERROR_INVALID_ARG;
+    auto* const usbdTransfer = transfer;
+    if (usbdTransfer->deviceHandle == nullptr) return SCE_USBD_ERROR_INVALID_ARG;
     auto& state = State();
     {
         std::lock_guard lock(state.mutex);
-        if (transfer->numIsoPackets > IsoCapacity(state, transfer)) return SCE_USBD_ERROR_INVALID_ARG;
+        if (usbdTransfer->numIsoPackets > IsoCapacity(state, usbdTransfer)) return SCE_USBD_ERROR_INVALID_ARG;
     }
-    if (transfer->length < 0 || (transfer->length > 0 && transfer->buffer == nullptr)) return SCE_USBD_ERROR_INVALID_ARG;
-    auto* handle = KnownHandle(transfer->deviceHandle, __func__);
-    if ((transfer->flags & ~SUPPORTED_TRANSFER_FLAGS) != 0) throw std::runtime_error(std::string(__func__) + ": transfer flags " + std::to_string(transfer->flags) + " are not supported");
-    if (transfer->numIsoPackets < 0) return SCE_USBD_ERROR_INVALID_ARG;
-    auto* host = libusb_alloc_transfer(transfer->numIsoPackets);
+    if (usbdTransfer->length < 0 || (usbdTransfer->length > 0 && usbdTransfer->buffer == nullptr)) return SCE_USBD_ERROR_INVALID_ARG;
+    auto* handle = KnownHandle(usbdTransfer->deviceHandle, __func__);
+    if ((usbdTransfer->flags & ~SUPPORTED_TRANSFER_FLAGS) != 0) throw std::runtime_error(std::string(__func__) + ": transfer flags " + std::to_string(usbdTransfer->flags) + " are not supported");
+    if (usbdTransfer->numIsoPackets < 0) return SCE_USBD_ERROR_INVALID_ARG;
+    auto* host = libusb_alloc_transfer(usbdTransfer->numIsoPackets);
     if (host == nullptr) return ToGuestError(LIBUSB_ERROR_NO_MEM);
     host->dev_handle = handle;
-    host->flags = transfer->flags;
-    host->endpoint = transfer->endpoint;
-    host->type = transfer->type;
-    host->timeout = transfer->timeout;
-    host->length = transfer->length;
-    host->buffer = transfer->buffer;
-    host->user_data = transfer;
+    host->flags = usbdTransfer->flags;
+    host->endpoint = usbdTransfer->endpoint;
+    host->type = usbdTransfer->type;
+    host->timeout = usbdTransfer->timeout;
+    host->length = usbdTransfer->length;
+    host->buffer = usbdTransfer->buffer;
+    host->user_data = usbdTransfer;
     host->callback = CompleteTransfer;
-    host->num_iso_packets = transfer->numIsoPackets;
-    for (int packet = 0; packet < transfer->numIsoPackets; ++packet) host->iso_packet_desc[packet].length = transfer->isoPacketDescriptors[packet].length;
+    host->num_iso_packets = usbdTransfer->numIsoPackets;
+    for (int packet = 0; packet < usbdTransfer->numIsoPackets; ++packet) host->iso_packet_desc[packet].length = usbdTransfer->isoPacketDescriptors[packet].length;
     {
         std::lock_guard lock(state.mutex);
-        if (!state.inFlight.emplace(transfer, host).second) {
+        if (!state.inFlight.emplace(usbdTransfer, host).second) {
             libusb_free_transfer(host);
             return ToGuestError(LIBUSB_ERROR_BUSY);
         }
