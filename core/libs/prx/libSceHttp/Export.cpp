@@ -497,8 +497,9 @@ int APS5_VABI sceHttpParseResponseHeader(const char* header, std::size_t headerL
     if (!header) return invalidResponse;
     if (!fieldStr || !fieldValue || !valueLen) return invalidValue;
 
-    std::size_t fieldLen = 0;
-    while (fieldLen < 0xfff && fieldStr[fieldLen] != '\0') ++fieldLen;
+    std::string fieldName;
+    if (!HttpGuest::CopyText(fieldStr, 0xfff, fieldName)) return invalidValue;
+    const std::size_t fieldLen = fieldName.size();
     const std::string_view input(header, headerLen);
     const auto isSpace = [](char c) { return c == ' ' || (c >= '\t' && c <= '\r'); };
     const auto lower = [](char c) { return c >= 'A' && c <= 'Z' ? c + ('a' - 'A') : c; };
@@ -507,7 +508,7 @@ int APS5_VABI sceHttpParseResponseHeader(const char* header, std::size_t headerL
     while (start < headerLen) {
         if (!isSpace(input[start]) && fieldLen < headerLen - start && input[start + fieldLen] == ':') {
             std::size_t i = 0;
-            while (i < fieldLen && lower(input[start + i]) == lower(fieldStr[i])) ++i;
+            while (i < fieldLen && lower(input[start + i]) == lower(fieldName[i])) ++i;
             if (i == fieldLen) {
                 start += fieldLen + 1;
                 found = true;
@@ -522,8 +523,9 @@ int APS5_VABI sceHttpParseResponseHeader(const char* header, std::size_t headerL
 
     const auto continues = [&input, headerLen](std::size_t next) { return next < headerLen && (input[next] == ' ' || input[next] == '\t'); };
     const auto empty = [fieldValue, valueLen] {
-        *fieldValue = nullptr;
-        *valueLen = 0;
+        const char* nullVal = nullptr;
+        const std::size_t zeroLen = 0;
+        if (!HttpGuest::Store(fieldValue, nullVal) || !HttpGuest::Store(valueLen, zeroLen)) return invalidValue;
         return 0;
     };
     while (start < headerLen) {
@@ -553,8 +555,9 @@ int APS5_VABI sceHttpParseResponseHeader(const char* header, std::size_t headerL
     if (end > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
         throw std::out_of_range("sceHttpParseResponseHeader: value end exceeds int");
     }
-    *fieldValue = header + start;
-    *valueLen = end - start;
+    const char* valPtr = header + start;
+    const std::size_t length = end - start;
+    if (!HttpGuest::Store(fieldValue, valPtr) || !HttpGuest::Store(valueLen, length)) return invalidValue;
     return static_cast<int>(end);
 }
 
