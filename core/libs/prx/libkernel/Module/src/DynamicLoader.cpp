@@ -468,16 +468,17 @@ void* APS5_VABI dlopen_nid_postfix(const char* path, int flags) {
     if ((flags & ~0x103) || (flags & 3) == 0 || (flags & 3) == 3) {
         Error("dlopen: unsupported flags"); return nullptr;
     }
+    const auto* const modulePath = path;
     try {
         auto module = std::make_shared<Module>();
-        module->global = (flags & 0x100) != 0 || !path;
+        module->global = (flags & 0x100) != 0 || !modulePath;
 #ifdef _WIN32
-        if (!path) {
+        if (!modulePath) {
             module->native = GetModuleHandleW(nullptr);
             module->owned = false;
         } else {
-            if (!*path) { Error("dlopen: empty module path"); return nullptr; }
-            const auto [source, resolved] = ResolveModulePaths(path);
+            if (!*modulePath) { Error("dlopen: empty module path"); return nullptr; }
+            const auto [source, resolved] = ResolveModulePaths(modulePath);
             module->native = LoadWithoutErrorDialog(resolved);
             if (!module->native) {
                 const auto error = GetLastError();
@@ -533,7 +534,8 @@ void* APS5_VABI dlopen_nid_postfix(const char* path, int flags) {
     } catch (const std::exception& error) { Error(error.what()); return nullptr; }
 }
 void* APS5_VABI dlsym_nid_postfix(void* handle, const char* name) {
-    if (!name || !*name) { Error("dlsym: empty symbol name"); return nullptr; }
+    const auto* const symName = name;
+    if (!symName || !*symName) { Error("dlsym: empty symbol name"); return nullptr; }
     try {
         std::vector<std::shared_ptr<Module>> search;
         bool defaultScope = handle == nullptr || handle == reinterpret_cast<void*>(static_cast<std::intptr_t>(-2));
@@ -558,13 +560,13 @@ void* APS5_VABI dlsym_nid_postfix(void* handle, const char* name) {
                 search.push_back(found->second);
             }
         }
-        for (const auto& module : search) if (auto* result = FindSymbol(*module, name)) return result;
+        for (const auto& module : search) if (auto* result = FindSymbol(*module, symName)) return result;
 #ifndef _WIN32
         if (defaultScope) {
-            if (auto* result = DefaultScopeSymbol(name)) return result;
-            const auto nid = Nid::ComputeNid(name, "");
+            if (auto* result = DefaultScopeSymbol(symName)) return result;
+            const auto nid = Nid::ComputeNid(symName, "");
             if (auto* result = DefaultScopeSymbol(nid.c_str())) return result;
-            if (auto* result = DefaultScopeSymbol((std::string(name) + "#guest").c_str())) return result;
+            if (auto* result = DefaultScopeSymbol((std::string(symName) + "#guest").c_str())) return result;
             if (auto* result = DefaultScopeSymbol((nid + "#guest").c_str())) return result;
         }
 #endif

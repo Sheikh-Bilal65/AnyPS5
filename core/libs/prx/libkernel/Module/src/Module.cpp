@@ -182,35 +182,36 @@ int APS5_VABI sceKernelDlsym(KernelModule handle, const char* symbol, void** add
 int APS5_VABI sceKernelGetModuleInfoForUnwind(uint64_t addr, int flags, ModuleInfoForUnwind* info) {
   (void)flags;
   if (!info) return SCE_KERNEL_ERROR_EFAULT;
+  auto* const outInfo = info;
 #if defined(__EMSCRIPTEN__)
   static_cast<void>(addr);
   NotImplemented_nid_no_patch(__func__);
 #elif defined(_WIN32)
-  if (FillKnownUnwindImage(addr, info)) return 0;
+  if (FillKnownUnwindImage(addr, outInfo)) return 0;
   MEMORY_BASIC_INFORMATION mbi{};
   if (!VirtualQuery(reinterpret_cast<LPCVOID>(addr), &mbi, sizeof(mbi))) return SCE_KERNEL_ERROR_ESRCH;
-  info->st_size = sizeof(ModuleInfoForUnwind);
-  info->eh_frame_hdr_addr = 0;
-  info->eh_frame_addr = 0;
-  info->eh_frame_size = 0;
-  info->seg0_addr = reinterpret_cast<std::uint64_t>(mbi.BaseAddress);
-  info->seg0_size = mbi.RegionSize;
+  outInfo->st_size = sizeof(ModuleInfoForUnwind);
+  outInfo->eh_frame_hdr_addr = 0;
+  outInfo->eh_frame_addr = 0;
+  outInfo->eh_frame_size = 0;
+  outInfo->seg0_addr = reinterpret_cast<std::uint64_t>(mbi.BaseAddress);
+  outInfo->seg0_size = mbi.RegionSize;
   if (mbi.Type == MEM_IMAGE) {
-    FillUnwindImage(mbi.AllocationBase, info);
+    FillUnwindImage(mbi.AllocationBase, outInfo);
     return 0;
   }
   char path[4096] = {};
   const DWORD len = GetMappedFileNameA(GetCurrentProcess(), mbi.BaseAddress, path, sizeof(path) - 1);
   path[len] = '\0';
-  std::strncpy(info->name, path, sizeof(info->name) - 1);
-  info->name[sizeof(info->name) - 1] = '\0';
+  std::strncpy(outInfo->name, path, sizeof(outInfo->name) - 1);
+  outInfo->name[sizeof(outInfo->name) - 1] = '\0';
   return 0;
 #elif defined(__APPLE__)
   struct Search {
     std::uint64_t address;
     ModuleInfoForUnwind* info;
     bool found;
-  } search {addr, info, false};
+  } search {addr, outInfo, false};
   dl_iterate_phdr([](dl_phdr_info* image, std::size_t, void* data) {
     auto& search = *static_cast<Search*>(data);
     const Elf64_Phdr* first = nullptr;
@@ -224,13 +225,13 @@ int APS5_VABI sceKernelGetModuleInfoForUnwind(uint64_t addr, int flags, ModuleIn
       if (header.p_type == PT_GNU_EH_FRAME) frames = &header;
     }
     if (!contains) return 0;
-    auto* info = search.info;
-    info->st_size = sizeof(ModuleInfoForUnwind);
-    std::strncpy(info->name, image->dlpi_name != nullptr ? image->dlpi_name : "", sizeof(info->name) - 1);
-    info->name[sizeof(info->name) - 1] = '\0';
-    info->eh_frame_hdr_addr = frames != nullptr ? image->dlpi_addr + frames->p_vaddr : 0;
-    info->eh_frame_addr = 0;
-    info->eh_frame_size = 0;
+    auto* foundInfo = search.info;
+    foundInfo->st_size = sizeof(ModuleInfoForUnwind);
+    std::strncpy(foundInfo->name, image->dlpi_name != nullptr ? image->dlpi_name : "", sizeof(foundInfo->name) - 1);
+    foundInfo->name[sizeof(foundInfo->name) - 1] = '\0';
+    foundInfo->eh_frame_hdr_addr = frames != nullptr ? image->dlpi_addr + frames->p_vaddr : 0;
+    foundInfo->eh_frame_addr = 0;
+    foundInfo->eh_frame_size = 0;
     if (frames != nullptr) {
       const auto loaded = [image](std::uintptr_t begin, std::uint64_t size) {
         for (std::uint16_t index = 0; index < image->dlpi_phnum; ++index) {
@@ -240,12 +241,12 @@ int APS5_VABI sceKernelGetModuleInfoForUnwind(uint64_t addr, int flags, ModuleIn
         }
         return false;
       };
-      const auto tables = EhFrame::ReadTables(loaded, info->eh_frame_hdr_addr, "sceKernelGetModuleInfoForUnwind");
-      info->eh_frame_addr = tables.frames;
-      info->eh_frame_size = tables.framesSize + sizeof(std::uint32_t);
+      const auto tables = EhFrame::ReadTables(loaded, foundInfo->eh_frame_hdr_addr, "sceKernelGetModuleInfoForUnwind");
+      foundInfo->eh_frame_addr = tables.frames;
+      foundInfo->eh_frame_size = tables.framesSize + sizeof(std::uint32_t);
     }
-    info->seg0_addr = image->dlpi_addr + first->p_vaddr;
-    info->seg0_size = first->p_memsz;
+    foundInfo->seg0_addr = image->dlpi_addr + first->p_vaddr;
+    foundInfo->seg0_size = first->p_memsz;
     search.found = true;
     return 1;
   }, &search);
@@ -254,27 +255,27 @@ int APS5_VABI sceKernelGetModuleInfoForUnwind(uint64_t addr, int flags, ModuleIn
   if (!dladdr(reinterpret_cast<void*>(addr), &image) || image.dli_fbase == nullptr) return SCE_KERNEL_ERROR_ESRCH;
   unsigned long textSize = 0;
   getsegmentdata(static_cast<const mach_header_64*>(image.dli_fbase), "__TEXT", &textSize);
-  info->st_size = sizeof(ModuleInfoForUnwind);
-  std::strncpy(info->name, image.dli_fname != nullptr ? image.dli_fname : "", sizeof(info->name) - 1);
-  info->name[sizeof(info->name) - 1] = '\0';
-  info->eh_frame_hdr_addr = 0;
-  info->eh_frame_addr = 0;
-  info->eh_frame_size = 0;
-  info->seg0_addr = reinterpret_cast<std::uint64_t>(image.dli_fbase);
-  info->seg0_size = textSize;
+  outInfo->st_size = sizeof(ModuleInfoForUnwind);
+  std::strncpy(outInfo->name, image.dli_fname != nullptr ? image.dli_fname : "", sizeof(outInfo->name) - 1);
+  outInfo->name[sizeof(outInfo->name) - 1] = '\0';
+  outInfo->eh_frame_hdr_addr = 0;
+  outInfo->eh_frame_addr = 0;
+  outInfo->eh_frame_size = 0;
+  outInfo->seg0_addr = reinterpret_cast<std::uint64_t>(image.dli_fbase);
+  outInfo->seg0_size = textSize;
   return 0;
 #else
   const auto mapping = HostMapping::Find(addr, "sceKernelGetModuleInfoForUnwind");
   if (!mapping) return SCE_KERNEL_ERROR_ESRCH;
-  info->st_size = sizeof(ModuleInfoForUnwind);
-  std::strncpy(info->name, mapping->path.c_str(), sizeof(info->name) - 1);
-  info->name[sizeof(info->name) - 1] = '\0';
-  info->eh_frame_hdr_addr = 0;
-  info->eh_frame_addr = 0;
-  info->eh_frame_size = 0;
-  info->seg0_addr = mapping->start;
-  info->seg0_size = mapping->end - mapping->start;
-  if (IsRelinkedImage(addr)) FillGuestUnwindInfo(addr, info);
+  outInfo->st_size = sizeof(ModuleInfoForUnwind);
+  std::strncpy(outInfo->name, mapping->path.c_str(), sizeof(outInfo->name) - 1);
+  outInfo->name[sizeof(outInfo->name) - 1] = '\0';
+  outInfo->eh_frame_hdr_addr = 0;
+  outInfo->eh_frame_addr = 0;
+  outInfo->eh_frame_size = 0;
+  outInfo->seg0_addr = mapping->start;
+  outInfo->seg0_size = mapping->end - mapping->start;
+  if (IsRelinkedImage(addr)) FillGuestUnwindInfo(addr, outInfo);
   return 0;
 #endif
 }
