@@ -363,8 +363,9 @@ int APS5_VABI sceKernelEnableDmemAliasing(void) {
 int APS5_VABI sceKernelMapDirectMemory(void** addr, size_t len, int prot, int flags, int64_t direct_memory_start, size_t alignment) {
  if (UndefinedProtection(prot)) return SCE_KERNEL_ERROR_EINVAL;
  (void)alignment;
- const int result = DoMapDirect(addr, len, prot, flags, direct_memory_start, alignment);
- if (result == 0) _releaseFlexible(reinterpret_cast<uintptr_t>(*addr), len);
+ auto* const out = addr;
+ const int result = DoMapDirect(out, len, prot, flags, direct_memory_start, alignment);
+ if (result == 0) _releaseFlexible(reinterpret_cast<uintptr_t>(*out), len);
  return result;
 }
 
@@ -372,8 +373,9 @@ int APS5_VABI sceKernelMapDirectMemory2(void** addr, size_t len, int type, int p
  if (UndefinedProtection(prot)) return SCE_KERNEL_ERROR_EINVAL;
  if (static_cast<unsigned>(flags) >= 0x1000000u || (alignment & ((alignment - 1) | 0x3fff)) != 0 || std::bit_width(std::max<size_t>(alignment, 0x4000)) - 1 > 30) return SCE_KERNEL_ERROR_EINVAL;
  (void)type;
- const int result = DoMapDirect(addr, len, prot, flags, direct_memory_start, alignment);
- if (result == 0) _releaseFlexible(reinterpret_cast<uintptr_t>(*addr), len);
+ auto* const out = addr;
+ const int result = DoMapDirect(out, len, prot, flags, direct_memory_start, alignment);
+ if (result == 0) _releaseFlexible(reinterpret_cast<uintptr_t>(*out), len);
  return result;
 }
 
@@ -385,16 +387,18 @@ int APS5_VABI sceKernelMapFlexibleMemory(void** addr_in_out, size_t len, int pro
 
 int APS5_VABI sceKernelMapNamedDirectMemory(void** addr, size_t len, int prot, int flags, int64_t direct_memory_start, size_t alignment, const char* name) {
  if (UndefinedProtection(prot)) return SCE_KERNEL_ERROR_EINVAL;
- const int result = DoMapDirect(addr, len, prot, flags, direct_memory_start, alignment);
- if (result == 0) _releaseFlexible(reinterpret_cast<uintptr_t>(*addr), len);
- if (result == 0) NameMappedRange(*addr, len, name);
+ auto* const out = addr;
+ const int result = DoMapDirect(out, len, prot, flags, direct_memory_start, alignment);
+ if (result == 0) _releaseFlexible(reinterpret_cast<uintptr_t>(*out), len);
+ if (result == 0) NameMappedRange(*out, len, name);
  return result;
 }
 
 int32_t APS5_VABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, size_t len, int prot, int flags, const char* name) {
  if (UndefinedProtection(prot) || flags == 0x8000) return SCE_KERNEL_ERROR_EINVAL;
- const int result = _mapFlexible(addr_in_out, len, prot, flags);
- if (result == 0) NameMappedRange(*addr_in_out, len, name);
+ auto* const out = addr_in_out;
+ const int result = _mapFlexible(out, len, prot, flags);
+ if (result == 0) NameMappedRange(*out, len, name);
  return result;
 }
 
@@ -449,8 +453,9 @@ int APS5_VABI sceKernelReleaseDirectMemory(int64_t start, size_t len) {
 }
 
 int APS5_VABI sceKernelReserveVirtualRange(void** addr, size_t len, int flags, size_t alignment) {
- const int result = DoReserveVirtual(addr, len, flags, alignment);
- if (result == 0) _releaseFlexible(reinterpret_cast<uintptr_t>(*addr), len);
+ auto* const out = addr;
+ const int result = DoReserveVirtual(out, len, flags, alignment);
+ if (result == 0) _releaseFlexible(reinterpret_cast<uintptr_t>(*out), len);
  return result;
 }
 
@@ -774,10 +779,11 @@ int32_t APS5_VABI sceKernelMapNamedSystemFlexibleMemory(void** addr_in_out, size
     const int error = CopyRangeName(name, MaximumNameLength, copy);
     if (error == 63) throw std::runtime_error("sceKernelMapNamedSystemFlexibleMemory: name of 32 bytes or more");
     if (error != 0) throw std::runtime_error("sceKernelMapNamedSystemFlexibleMemory: unreadable name");
-    const int result = DoMapAnon(addr_in_out, len, prot, flags);
+    auto* const out = addr_in_out;
+    const int result = DoMapAnon(out, len, prot, flags);
     if (result != 0) return result;
-    _releaseFlexible(reinterpret_cast<uintptr_t>(*addr_in_out), len);
-    NameVirtualRange(*addr_in_out, len, std::move(copy));
+    _releaseFlexible(reinterpret_cast<uintptr_t>(*out), len);
+    NameVirtualRange(*out, len, std::move(copy));
     return 0;
 }
 
