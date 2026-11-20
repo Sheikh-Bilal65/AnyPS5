@@ -198,12 +198,15 @@ std::int32_t APS5_VABI scePsmlMfsrInit() {
 std::int32_t APS5_VABI scePsmlMfsrGetSharedResourcesInitRequirement(MfsrRequirement* requirement, const MfsrSharedResourcesParam* param) {
  if (!g_mfsrInitialized) return SCE_PSML_ERROR_NOT_INITIALIZED;
  RequireMfsr(requirement != nullptr && param != nullptr, __func__, "null requirement or parameter");
- if (param->type != 0) {
-  const bool gated = (param->type == 1 && (g_mfsrFeatureFlags.load() & 1u) != 0) || (param->type == 2 && (g_mfsrFeatureFlags.load() & 2u) != 0);
+ MfsrSharedResourcesParam localParam{};
+ if (!CopyInPreservingErrno(&localParam, param, sizeof(localParam))) throw std::runtime_error(std::string(__func__) + ": unreadable parameter");
+ if (localParam.type != 0) {
+  const bool gated = (localParam.type == 1 && (g_mfsrFeatureFlags.load() & 1u) != 0) || (localParam.type == 2 && (g_mfsrFeatureFlags.load() & 2u) != 0);
   if (!gated) return SCE_PSML_ERROR_UNSUPPORTED_TYPE;
   NotImplemented_nid_no_patch(__func__);
  }
- *requirement = {MfsrBlockBytes, MfsrBlockBytes, MfsrSharedBlockCount};
+ const MfsrRequirement localReq = {MfsrBlockBytes, MfsrBlockBytes, MfsrSharedBlockCount};
+ if (!CopyOutPreservingErrno(requirement, &localReq, sizeof(localReq))) throw std::runtime_error(std::string(__func__) + ": unwritable requirement");
  return 0;
 }
 
@@ -214,11 +217,13 @@ std::int32_t APS5_VABI scePsmlMfsrCreateSharedResources(void** sharedResources, 
   if (object->kind == MfsrObjectKind::SharedResources) return SCE_PSML_ERROR_SHARED_RESOURCES_BUSY;
  }
  RequireMfsr(sharedResources != nullptr && param != nullptr, __func__, "null handle or parameter");
- if (param->type != 0) return SCE_PSML_ERROR_UNSUPPORTED_TYPE;
- RequireBlocks(param->blocks, param->blockCount, MfsrSharedBlockCount, __func__);
+ MfsrSharedResourcesParam localParam{};
+ if (!CopyInPreservingErrno(&localParam, param, sizeof(localParam))) throw std::runtime_error(std::string(__func__) + ": unreadable parameter");
+ if (localParam.type != 0) return SCE_PSML_ERROR_UNSUPPORTED_TYPE;
+ RequireBlocks(localParam.blocks, localParam.blockCount, MfsrSharedBlockCount, __func__);
  auto* object = new MfsrObject{MfsrObjectKind::SharedResources, nullptr, 0, 0};
  g_mfsrObjects.emplace(object, object);
- *sharedResources = object;
+ if (!CopyOutPreservingErrno(sharedResources, &object, sizeof(object))) throw std::runtime_error(std::string(__func__) + ": unwritable handle");
  return 0;
 }
 
@@ -255,10 +260,13 @@ std::int32_t APS5_VABI scePsmlMfsrCreateContextFrom2023July(void** context, cons
 std::int32_t APS5_VABI scePsmlMfsrCreateContext(void** context, const MfsrMemoryParam* param) {
  if (!g_mfsrInitialized) return SCE_PSML_ERROR_NOT_INITIALIZED;
  RequireMfsr(context != nullptr && param != nullptr, __func__, "null handle or parameter");
- RequireBlocks(param->blocks, param->blockCount, MfsrBlockCount, __func__);
- RequireMfsr(param->type <= 2, __func__, "unknown context type");
- if (param->type != 0) NotImplemented_nid_no_patch(__func__);
- *context = CreateMfsrContext(nullptr, __func__, Mfsr4KDimensions.first, Mfsr4KDimensions.second);
+ MfsrMemoryParam localParam{};
+ if (!CopyInPreservingErrno(&localParam, param, sizeof(localParam))) throw std::runtime_error(std::string(__func__) + ": unreadable parameter");
+ RequireBlocks(localParam.blocks, localParam.blockCount, MfsrBlockCount, __func__);
+ RequireMfsr(localParam.type <= 2, __func__, "unknown context type");
+ if (localParam.type != 0) NotImplemented_nid_no_patch(__func__);
+ void* created = CreateMfsrContext(nullptr, __func__, Mfsr4KDimensions.first, Mfsr4KDimensions.second);
+ if (!CopyOutPreservingErrno(context, &created, sizeof(created))) throw std::runtime_error(std::string(__func__) + ": unwritable handle");
  return 0;
 }
 
@@ -296,7 +304,8 @@ std::int32_t APS5_VABI scePsmlMfsrGetDispatchMfsrPacketSizeInDwords(void* contex
  MfsrObject object;
  if (!FindMfsrObject(context, &object)) return SCE_PSML_ERROR_INVALID_ARGUMENT;
  if (packetSizeInDwords == nullptr) return SCE_PSML_ERROR_NULL_OUTPUT;
- *packetSizeInDwords = MfsrDispatchPacketDwords;
+ const std::uint32_t dwords = MfsrDispatchPacketDwords;
+ if (!CopyOutPreservingErrno(packetSizeInDwords, &dwords, sizeof(dwords))) return SCE_PSML_ERROR_INVALID_ARGUMENT;
  return 0;
 }
 
@@ -313,7 +322,8 @@ std::int32_t APS5_VABI scePsmlMfsrGetMipmapBias(void* context, float* bias, std:
  if (!FindMfsrObject(context, &object) || object.kind != MfsrObjectKind::Context) return SCE_PSML_ERROR_INVALID_ARGUMENT;
  if (bias == nullptr) return SCE_PSML_ERROR_NULL_OUTPUT;
  if (object.inputWidth == 0) return SCE_PSML_ERROR_INVALID_ARGUMENT;
- *bias = std::log2f(static_cast<float>(dimension) / static_cast<float>(object.inputWidth)) - 1.0f;
+ const float computed = std::log2f(static_cast<float>(dimension) / static_cast<float>(object.inputWidth)) - 1.0f;
+ if (!CopyOutPreservingErrno(bias, &computed, sizeof(computed))) return SCE_PSML_ERROR_INVALID_ARGUMENT;
  return 0;
 }
 
