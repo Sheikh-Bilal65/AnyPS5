@@ -155,6 +155,9 @@ int main() {
     Require(getnameinfo_nid_postfix(v4.data(), 2, host, sizeof(host), nullptr, 0, 10) == 5);
     Require(getnameinfo_nid_postfix(v4.data(), v4.size(), host, sizeof(host), nullptr, 0, 32) == 3);
     Require(getnameinfo_nid_postfix(v4.data(), v4.size(), host, 1, nullptr, 0, 10) == 14);
+    Require(getnameinfo_nid_postfix(reinterpret_cast<const void*>(0xdeadbeef), v4.size(), host, sizeof(host), service, sizeof(service), 10) == 4);
+    Require(getnameinfo_nid_postfix(v4.data(), v4.size(), reinterpret_cast<char*>(0xdeadbeef), sizeof(host), nullptr, 0, 10) == 4);
+    freeaddrinfo_nid_postfix(reinterpret_cast<GuestResolver::AddressInfo*>(0xdeadbeef));
     Require(std::strcmp(gai_strerror_nid_postfix(0), "Success") == 0);
     Require(std::strcmp(gai_strerror_nid_postfix(3), "Invalid value for ai_flags") == 0);
     Require(std::strcmp(gai_strerror_nid_postfix(8), "hostname nor servname provided, or not known") == 0);

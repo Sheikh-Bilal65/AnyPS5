@@ -376,9 +376,11 @@ GuestResolver::ServiceEntry* APS5_VABI getservbyname_nid_postfix(const char* gue
 
 void APS5_VABI freeaddrinfo_nid_postfix(GuestResolver::AddressInfo* first) {
     while (first) {
-        auto* next = first->next;
-        std::free(first->canonicalName);
-        std::free(first->address);
+        GuestResolver::AddressInfo info{};
+        if (!GuestCopyIn_nid_no_patch(&info, first, sizeof(info))) return;
+        auto* next = info.next;
+        std::free(info.canonicalName);
+        std::free(info.address);
         std::free(first);
         first = next;
     }
@@ -420,21 +422,21 @@ int APS5_VABI getaddrinfo_nid_postfix(const char* node, const char* service,
     } catch (const std::bad_alloc&) {
         return 6;
     }
-    if (node) node = nodeCopy.c_str();
-    if (service) service = serviceCopy.c_str();
+    const char* const nodeStr = node ? nodeCopy.c_str() : nullptr;
+    const char* const serviceStr = service ? serviceCopy.c_str() : nullptr;
     const char* numericName = nullptr;
-    if (node && hints && (hints->flags & 2)) {
+    if (nodeStr && hints && (hints->flags & 2)) {
         std::array<unsigned char, 4> v4{};
         std::array<unsigned char, 16> v6{};
-        const char* scope = std::strchr(node, '%');
-        const std::size_t length = scope ? static_cast<std::size_t>(scope - node) : std::strlen(node);
+        const char* scope = std::strchr(nodeStr, '%');
+        const std::size_t length = scope ? static_cast<std::size_t>(scope - nodeStr) : std::strlen(nodeStr);
         std::array<char, 64> address{};
         bool numericV6 = false;
         if (length < address.size()) {
-            std::memcpy(address.data(), node, length);
+            std::memcpy(address.data(), nodeStr, length);
             numericV6 = inet_pton(AF_INET6, address.data(), v6.data()) == 1;
         }
-        if ((hints->flags & 4) || NumericAddress(node, v4) || numericV6) numericName = node;
+        if ((hints->flags & 4) || NumericAddress(nodeStr, v4) || numericV6) numericName = nodeStr;
     }
     std::array<addrinfo, 2> queries{nativeHints, nativeHints};
     std::size_t queryCount = 1;
@@ -460,7 +462,7 @@ int APS5_VABI getaddrinfo_nid_postfix(const char* node, const char* service,
     int lookupFailure = 0;
     for (std::size_t query = 0; query < queryCount; ++query) {
         addrinfo* native = nullptr;
-        const auto error = ::getaddrinfo(node, service, &queries[query], &native);
+        const auto error = ::getaddrinfo(nodeStr, serviceStr, &queries[query], &native);
         if (error) {
             if (error == EAI_SERVICE) { lookupFailure = 9; continue; }
             failure = GuestError(error);
@@ -516,11 +518,17 @@ int APS5_VABI getaddrinfo_nid_postfix(const char* node, const char* service,
 
 int APS5_VABI getnameinfo_nid_postfix(const void* address, std::uint32_t length,
     char* host, std::uint32_t hostLength, char* service, std::uint32_t serviceLength, int flags) {
-    // PS5 sockaddr begins with byte-sized length and family. The host's does not.
     if (!address || length < 2) return 5;
     if ((!host && hostLength) || (!service && serviceLength)) return 4;
+    const bool wantHost = host && hostLength;
+    const bool wantService = service && serviceLength;
+    if ((wantHost && !GuestWritable_nid_no_patch(host, hostLength)) ||
+        (wantService && !GuestWritable_nid_no_patch(service, serviceLength))) return 4;
     if ((flags & ~0x1f) != 0) return 3;
-    const auto* bytes = static_cast<const unsigned char*>(address);
+    std::array<unsigned char, 28> addressBuffer{};
+    const std::size_t addressBytes = std::min<std::size_t>(length, addressBuffer.size());
+    if (!GuestCopyIn_nid_no_patch(addressBuffer.data(), address, addressBytes)) return 4;
+    const auto* const bytes = addressBuffer.data();
     sockaddr_storage native{};
     socklen_t nativeLength;
     if (bytes[1] == 2) {
@@ -547,20 +555,16 @@ int APS5_VABI getnameinfo_nid_postfix(const void* address, std::uint32_t length,
     if (flags & 8) nativeFlags |= NI_NUMERICSERV;
     if (flags & 16) nativeFlags |= NI_DGRAM;
     if (!Ready()) return 4;
-    // Stage results so host-specific short-buffer errors do not leak into the
-    // guest ABI, and neither guest output is partially modified on overflow.
     char resolvedHost[NI_MAXHOST]{};
     char resolvedService[NI_MAXSERV]{};
-    const bool wantHost = host && hostLength;
-    const bool wantService = service && serviceLength;
     const int error = ::getnameinfo(reinterpret_cast<const sockaddr*>(&native), nativeLength,
         wantHost ? resolvedHost : nullptr, wantHost ? sizeof(resolvedHost) : 0,
         wantService ? resolvedService : nullptr, wantService ? sizeof(resolvedService) : 0, nativeFlags);
     if (error) return GuestError(error);
     if ((wantHost && std::strlen(resolvedHost) >= hostLength) ||
         (wantService && std::strlen(resolvedService) >= serviceLength)) return 14;
-    if (wantHost) std::memcpy(host, resolvedHost, std::strlen(resolvedHost) + 1);
-    if (wantService) std::memcpy(service, resolvedService, std::strlen(resolvedService) + 1);
+    if (wantHost && !GuestCopyOut_nid_no_patch(host, resolvedHost, std::strlen(resolvedHost) + 1)) return 4;
+    if (wantService && !GuestCopyOut_nid_no_patch(service, resolvedService, std::strlen(resolvedService) + 1)) return 4;
     return 0;
 }
 
