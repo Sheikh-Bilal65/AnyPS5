@@ -220,30 +220,32 @@ int APS5_VABI sceFontGetFontMetrics(FontHandle fontHandle, std::uint32_t form, F
         ReleaseFontLock(font, fontLock);
         if (rc == SCE_FONT_OK) return rc;
     }
-    if (metrics) {
-        *metrics = {};
-        metrics->effectWeightX = 1.0f;
-        metrics->effectWeightY = 1.0f;
+    auto* const m = metrics;
+    if (m) {
+        *m = {};
+        m->effectWeightX = 1.0f;
+        m->effectWeightY = 1.0f;
     }
     return SCE_FONT_ERROR_INVALID_FONT_HANDLE;
 }
 
 int APS5_VABI sceFontGetFontStyleInformation(FontHandle fontHandle, FontStyleInformation* information) {
+    auto* const info = information;
     auto* font = GetNativeFont(fontHandle);
     std::uint32_t fontLock = 0;
     int rc = SCE_FONT_ERROR_INVALID_FONT_HANDLE;
     if (font && font->magic == HANDLE_MAGIC && AcquireFontLock(font, fontLock)) {
-        rc = ComputeFontStyleInformation(fontHandle, information);
+        rc = ComputeFontStyleInformation(fontHandle, info);
         ReleaseFontLock(font, fontLock);
         if (rc == SCE_FONT_OK) return rc;
     }
-    if (information) {
-        information->familyName = "";
-        information->styleName = "";
-        information->styleFlags = 0;
-        information->weight = 0;
-        information->width = 0;
-        information->layoutFlags = 0;
+    if (info) {
+        info->familyName = "";
+        info->styleName = "";
+        info->styleFlags = 0;
+        info->weight = 0;
+        info->width = 0;
+        info->layoutFlags = 0;
     }
     return rc;
 }
@@ -316,7 +318,8 @@ int APS5_VABI sceFontGetKerning(FontHandle fontHandle, std::uint32_t preCode, st
 
 int APS5_VABI sceFontGetRenderScaledKerning(FontHandle fontHandle, std::uint32_t preCode, std::uint32_t code, FontKerning* kerning) {
     if (!kerning) return SCE_FONT_ERROR_INVALID_PARAMETER;
-    *kerning = {};
+    auto* const k = kerning;
+    *k = {};
     auto* font = GetNativeFont(fontHandle);
     std::uint32_t fontLock = 0;
     if (!font || font->magic != HANDLE_MAGIC || !AcquireFontLock(font, fontLock)) return SCE_FONT_ERROR_INVALID_FONT_HANDLE;
@@ -406,25 +409,27 @@ int APS5_VABI sceFontRenderCharGlyphImageVertical(FontHandle fontHandle, std::ui
 
 void APS5_VABI sceFontRenderSurfaceInit(FontRenderSurface* renderSurface, void* buffer, int bufWidthByte, int pixelSizeByte, int widthPixel, int heightPixel) {
     if (!renderSurface) return;
+    auto* const surface = renderSurface;
     const auto width = static_cast<std::uint32_t>(std::max(widthPixel, 0));
     const auto height = static_cast<std::uint32_t>(std::max(heightPixel, 0));
-    renderSurface->buffer = buffer;
-    renderSurface->widthByte = bufWidthByte;
-    renderSurface->pixelSizeByte = static_cast<std::int8_t>(pixelSizeByte);
-    renderSurface->pad0 = 0;
-    renderSurface->styleFlag = 0;
-    renderSurface->pad2 = 0;
-    renderSurface->width = static_cast<std::int32_t>(width);
-    renderSurface->height = static_cast<std::int32_t>(height);
-    renderSurface->sc_x0 = 0;
-    renderSurface->sc_y0 = 0;
-    renderSurface->sc_x1 = width;
-    renderSurface->sc_y1 = height;
+    surface->buffer = buffer;
+    surface->widthByte = bufWidthByte;
+    surface->pixelSizeByte = static_cast<std::int8_t>(pixelSizeByte);
+    surface->pad0 = 0;
+    surface->styleFlag = 0;
+    surface->pad2 = 0;
+    surface->width = static_cast<std::int32_t>(width);
+    surface->height = static_cast<std::int32_t>(height);
+    surface->sc_x0 = 0;
+    surface->sc_y0 = 0;
+    surface->sc_x1 = width;
+    surface->sc_y1 = height;
 }
 
 void APS5_VABI sceFontRenderSurfaceSetScissor(FontRenderSurface* renderSurface, int x0, int y0, int w, int h) {
     if (!renderSurface) return;
-    const auto surfaceW = static_cast<std::uint32_t>(renderSurface->width);
+    auto* const surface = renderSurface;
+    const auto surfaceW = static_cast<std::uint32_t>(surface->width);
     if (surfaceW != 0) {
         std::uint32_t x1;
         std::uint32_t left;
@@ -444,10 +449,10 @@ void APS5_VABI sceFontRenderSurfaceSetScissor(FontRenderSurface* renderSurface, 
                 if (surfaceW < x1) x1 = surfaceW;
             }
         }
-        renderSurface->sc_x0 = left;
-        renderSurface->sc_x1 = x1;
+        surface->sc_x0 = left;
+        surface->sc_x1 = x1;
     }
-    const auto surfaceH = static_cast<std::uint32_t>(renderSurface->height);
+    const auto surfaceH = static_cast<std::uint32_t>(surface->height);
     if (surfaceH == 0) return;
     std::uint32_t top;
     std::uint32_t y1 = surfaceH;
@@ -455,14 +460,14 @@ void APS5_VABI sceFontRenderSurfaceSetScissor(FontRenderSurface* renderSurface, 
     if (y0 < 0) {
         top = 0;
         if (height <= static_cast<std::uint32_t>(-y0)) {
-            renderSurface->sc_y0 = 0;
-            renderSurface->sc_y1 = 0;
+            surface->sc_y0 = 0;
+            surface->sc_y1 = 0;
             return;
         }
     } else {
         if (surfaceH < static_cast<std::uint32_t>(y0)) {
-            renderSurface->sc_y0 = surfaceH;
-            renderSurface->sc_y1 = y1;
+            surface->sc_y0 = surfaceH;
+            surface->sc_y1 = y1;
             return;
         }
         top = static_cast<std::uint32_t>(y0);
@@ -470,36 +475,40 @@ void APS5_VABI sceFontRenderSurfaceSetScissor(FontRenderSurface* renderSurface, 
     }
     const std::uint32_t candidate = height + static_cast<std::uint32_t>(y0);
     if (candidate <= surfaceH) y1 = candidate;
-    renderSurface->sc_y0 = top;
-    renderSurface->sc_y1 = y1;
+    surface->sc_y0 = top;
+    surface->sc_y1 = y1;
 }
 
 int APS5_VABI sceFontRenderSurfaceSetStyleFrame(FontRenderSurface* renderSurface, FontStyleFrame* styleFrame) {
     if (!renderSurface) return SCE_FONT_ERROR_INVALID_PARAMETER;
-    if (!styleFrame) {
-        renderSurface->styleFlag &= static_cast<std::uint8_t>(~0x1u);
-        renderSurface->reserved_q[0] = 0;
-        renderSurface->reserved_q[1] = 0;
+    auto* const surface = renderSurface;
+    const auto* const frame = styleFrame;
+    if (!frame) {
+        surface->styleFlag &= static_cast<std::uint8_t>(~0x1u);
+        surface->reserved_q[0] = 0;
+        surface->reserved_q[1] = 0;
         return SCE_FONT_OK;
     }
-    if (styleFrame->magic != STYLE_FRAME_MAGIC) return SCE_FONT_ERROR_INVALID_PARAMETER;
-    renderSurface->styleFlag |= 0x1;
-    renderSurface->reserved_q[0] = reinterpret_cast<std::uint64_t>(styleFrame);
-    renderSurface->reserved_q[1] = 0;
+    if (frame->magic != STYLE_FRAME_MAGIC) return SCE_FONT_ERROR_INVALID_PARAMETER;
+    surface->styleFlag |= 0x1;
+    surface->reserved_q[0] = reinterpret_cast<std::uint64_t>(frame);
+    surface->reserved_q[1] = 0;
     return SCE_FONT_OK;
 }
 
 int APS5_VABI sceFontGenerateCharGlyph(FontHandle fontHandle, std::uint32_t code, const FontGenerateGlyphDetail* detail, FontGlyph* pGlyph) {
     if (!pGlyph) return SCE_FONT_ERROR_INVALID_PARAMETER;
-    *pGlyph = nullptr;
+    auto* const glyphOut = pGlyph;
+    *glyphOut = nullptr;
     if (!fontHandle) return SCE_FONT_ERROR_INVALID_FONT_HANDLE;
     if (code == 0) return SCE_FONT_ERROR_NO_SUPPORT_CODE;
     if (!TryGetState(fontHandle)) return SCE_FONT_ERROR_INVALID_FONT_HANDLE;
-    const std::uint8_t glyphForm = detail ? detail->glyph_form : 0;
-    const std::uint8_t metricsForm = detail ? detail->metrics_form : 0;
-    const std::uint16_t formOptions = detail ? detail->form_options : 0;
-    const FontMemory* glyphMemory = detail ? detail->mem : nullptr;
-    if (detail && detail->id != GENERATE_GLYPH_DETAIL_ID) return SCE_FONT_ERROR_INVALID_PARAMETER;
+    const auto* const det = detail;
+    const std::uint8_t glyphForm = det ? det->glyph_form : 0;
+    const std::uint8_t metricsForm = det ? det->metrics_form : 0;
+    const std::uint16_t formOptions = det ? det->form_options : 0;
+    const FontMemory* glyphMemory = det ? det->mem : nullptr;
+    if (det && det->id != GENERATE_GLYPH_DETAIL_ID) return SCE_FONT_ERROR_INVALID_PARAMETER;
     if ((formOptions & static_cast<std::uint16_t>(~0x11u)) != 0) return SCE_FONT_ERROR_INVALID_PARAMETER;
     if (glyphForm == 0 && metricsForm != 0) return SCE_FONT_ERROR_INVALID_PARAMETER;
     if ((glyphForm != 0 && metricsForm == 0) || glyphForm > 1 || metricsForm > 4) return SCE_FONT_ERROR_INVALID_PARAMETER;
@@ -528,18 +537,20 @@ int APS5_VABI sceFontGenerateCharGlyph(FontHandle fontHandle, std::uint32_t code
     generated->owner = fontHandle;
     generated->outline.outline_flags = generated->glyph.flags;
     TrackGeneratedGlyph(&generated->glyph);
-    *pGlyph = &generated->glyph;
+    *glyphOut = &generated->glyph;
     return SCE_FONT_OK;
 }
 
 int APS5_VABI sceFontDeleteGlyph(const FontMemory* memory, FontGlyph* pGlyph) {
     (void)memory;
     if (!pGlyph) return SCE_FONT_ERROR_INVALID_PARAMETER;
-    const FontGlyph glyph = *pGlyph;
+    auto* const glyphOut = pGlyph;
+    const FontGlyph glyph = *glyphOut;
     if (!glyph || glyph->magic != GLYPH_MAGIC || !ForgetGeneratedGlyph(glyph)) return SCE_FONT_ERROR_INVALID_GLYPH;
     delete reinterpret_cast<GeneratedGlyph*>(glyph);
-    *pGlyph = nullptr;
+    *glyphOut = nullptr;
     return SCE_FONT_OK;
+}
 }
 
 int APS5_VABI sceFontGlyphDefineAttribute(FontGlyph glyph, std::int32_t attribute, std::int32_t* previousAttribute) {
